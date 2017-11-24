@@ -254,8 +254,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                         /* Add ARP req to quene*/
                         sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
-                                                 len,matching_entry->interface/*interface*/);
-                        /**Tochange/
+                                                 len,/*matching_entry->interface*/interface);
 
                         return 0;
 
