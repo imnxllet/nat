@@ -152,7 +152,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
     sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t*) (packet + sizeof(sr_ethernet_hdr_t));
 
     /*need delete*/
-    free((sr->nat).mappings);
+   
     /* TO-DO: Essentially we need to check if this packet is ipv4*/
 
     /* See if this packet is for me or not. */
