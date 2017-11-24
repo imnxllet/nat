@@ -112,6 +112,7 @@ int main(int argc, char **argv)
             /*Nat*/
             case 'n':
                 nat = 1;
+                printf("NAT MODE ON !!\n");
                 break;
             case 'I':
                 icmp_timeout_int = atoi((char *)optarg);
