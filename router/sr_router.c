@@ -316,6 +316,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Update the packet info to external addr and port */
             icmp_hdr->identifier = nat_entry->aux_ext;
             ip_packet->ip_src = nat_entry->ip_ext;
+            printf("After NAT... headers like this....\n");
+            print_hdrs(packet,len);
 
             int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
             icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
