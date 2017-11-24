@@ -215,7 +215,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     nat_entry->last_updated = time(NULL);
 
                    
-                    int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+                    int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
                     icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
                 }else{
                     printf("didn;t found entry..shit\n");
@@ -334,7 +334,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             printf("After NAT... headers like this\n");
             print_hdrs(packet,len);
 
-            int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+            int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
             icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
 
             
