@@ -117,7 +117,7 @@ void sr_handlepacket(struct sr_instance* sr,
         printf("This is a IP packet...\n");
 
         if(sr->nat_flag){
-            printf("Handling packet in nat mode..%s\n", );
+            printf("Handling packet in nat mode..%s\n");
             sr_nat_handleIPpacket(sr, packet, len, interface);
             return;
         }
@@ -164,7 +164,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
         /* PING from client to router throgh eth1. */
         if(is_nat_internal_iface(interface)){
-
+            printf("PING from client to router throgh eth1.\n");
             if (ip_proto == ip_protocol_icmp) { /* ICMP, send echo reply */
                 printf("This packet is for me(Echo Req), Initialize ARP req..\n");
                 
