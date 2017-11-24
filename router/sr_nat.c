@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 int sr_nat_init(struct sr_nat *nat) { /* Initializes the nat */
 
@@ -70,7 +71,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
   /* handle lookup here, malloc and assign to copy */
   /**/
   struct sr_nat_mapping *current = NULL;
-  struct sr_nat_mapping *copy = malloc(sizeof(sr_nat_mapping));
+  struct sr_nat_mapping *copy = malloc(sizeof(struct sr_nat_mapping));
   current = nat->mappings;
 
   while (current != NULL) {
@@ -94,11 +95,11 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
 
   /* handle lookup here, malloc and assign to copy. */
   struct sr_nat_mapping *current = NULL;
-  struct sr_nat_mapping *copy = malloc(sizeof(sr_nat_mapping));
+  struct sr_nat_mapping *copy = malloc(sizeof(struct sr_nat_mapping));
   current = nat->mappings;
 
   while (current != NULL) {
-    if (current->type == type && current>aux_ext == aux_ext && current->ip_int == ip_int) {
+    if (current->type == type && current->aux_ext == aux_ext && current->ip_int == ip_int) {
       memcpy(copy, current, sizeof(sr_nat_mapping));
       break;
     }
