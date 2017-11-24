@@ -284,11 +284,17 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             return sendICMPmessage(sr, 11, 0, interface, packet);
         }
         printf("This packet is not for router...should be forwarded..\n");
-       
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+
+        if(matching_entry == NULL){/* No match in routing table */
+          printf("Did not find target ip in rtable..\n");
+          return sendICMPmessage(sr, 3, 0, interface, packet);
+        }
 
        /* DO NAT */
 
         /* ICMP*/
+        struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
         if (ip_proto == ip_protocol_icmp) { 
             printf("Doing NAT for icmp that is targeting external host...\n");
 
@@ -305,7 +311,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 nat_entry = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, icmp_hdr->identifier, nat_mapping_icmp);
 
                 /* Add external ip(eth2) and port to mapping entry */
-                nat_entry->ip_ext = sr_get_interface(sr, NAT_EXTERNAL_INTERFACE)->ip;
+                nat_entry->ip_ext = forward_src_iface->ip;
                 /* Generate a random port for the entry for external info */
                 nat_entry->aux_ext = generate_unique_port(&(sr->nat));
             }else{
@@ -316,7 +322,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Update the packet info to external addr and port */
             icmp_hdr->identifier = nat_entry->aux_ext;
             ip_packet->ip_src = nat_entry->ip_ext;
-            printf("After NAT... headers like this....\n");
+            printf("After NAT... headers like this\n");
             print_hdrs(packet,len);
 
             int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
@@ -332,7 +338,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
@@ -374,9 +380,6 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 return sr_send_packet(sr,packet, len, matching_entry->interface);
             }
 
-        }else{/* No match in routing table */
-          printf("Did not find target ip in rtable..\n");
-          return sendICMPmessage(sr, 3, 0, interface, packet);
         }
     }
     return 0;
