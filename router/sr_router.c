@@ -117,7 +117,7 @@ void sr_handlepacket(struct sr_instance* sr,
         printf("This is a IP packet...\n");
 
         if(sr->nat_flag){
-            printf("Handling packet in nat mode..%s\n");
+            printf("Handling packet in nat mode..\n");
             sr_nat_handleIPpacket(sr, packet, len, interface);
             return;
         }
@@ -211,7 +211,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     icmp_hdr->identifier = nat_entry->aux_int;
                     nat_entry->last_updated = time(NULL);
 
-                    ip_packet->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+                   
                     int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
                     icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
                 }
@@ -235,28 +235,32 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
          
 
-                /* Miss ARP */
-                if (arpentry == NULL){
-                    printf("Miss in ARP cache table..\n");
-                    /* Send ARP request for 5 times. 
-                    If no response, send ICMP host Unreachable.*/
+                    /* Miss ARP */
+                    if (arpentry == NULL){
+                        printf("Miss in ARP cache table..\n");
+                        /* Send ARP request for 5 times. 
+                        If no response, send ICMP host Unreachable.*/
 
-                    /* Add ARP req to quene*/
-                    sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
-                                             len,/*matching_entry->interface*/interface);
+                        /* Add ARP req to quene*/
+                        sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
+                                                 len,/*matching_entry->interface*/interface);
 
-                    return 0;
+                        return 0;
 
-                }else{/* Hit */
-                    printf("Hit in ARP cahce table...\n");
+                    }else{/* Hit */
+                        printf("Hit in ARP cahce table...\n");
 
-                    /* Adjust ethernet packet and forward to next-hop */
-                    memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
-                    struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
-                    memcpy(((sr_ethernet_hdr_t *)packet)->ether_shost, forward_src_iface->addr, ETHER_ADDR_LEN);
-                    free(arpentry);
-              
-                    return sr_send_packet(sr,packet, len, matching_entry->interface);
+                        /* Adjust ethernet packet and forward to next-hop */
+                        memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
+                        struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
+                        memcpy(((sr_ethernet_hdr_t *)packet)->ether_shost, forward_src_iface->addr, ETHER_ADDR_LEN);
+                        free(arpentry);
+                  
+                        return sr_send_packet(sr,packet, len, matching_entry->interface);
+                    }
+                }else{/* No match in routing table */
+                    printf("Did not find target ip in rtable..\n");
+                    return sendICMPmessage(sr, 3, 0, interface, packet);
                 }
 
                 
@@ -292,7 +296,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             sr_icmp_t3_hdr_t *icmp_hdr = (sr_icmp_t3_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
             /* Look up external addr/port pair given internal info */
-            struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src,, icmp_hdr->identifier, nat_mapping_icmp);
+            struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src, icmp_hdr->identifier, nat_mapping_icmp);
 
             /* No mapping found.. */
             if (nat_entry == NULL) {
@@ -729,7 +733,7 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
     return match;
 }
 
-uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len) {
+uint32_t icmp_cksum (sr_icmp_t3_hdr_t *icmpHdr, int len) {
     uint16_t currChksum, calcChksum;
 
     currChksum = icmpHdr->icmp_sum; 
