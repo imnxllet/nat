@@ -211,12 +211,15 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 if (nat_entry != NULL) {
                     printf("found entry..\n");
                     ip_packet->ip_dst = nat_entry->ip_int;
+                    int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_int;
                     icmp_hdr->identifier = nat_entry->aux_int;
                     nat_entry->last_updated = time(NULL);
 
                    
                     /*int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
                     /*icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));*/
+                    icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);
+
                 }else{
                     printf("didn;t found entry..shit\n");
                 }
@@ -234,7 +237,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     ip_packet->ip_ttl --;
                     ip_packet->ip_sum = 0;
                     ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
-                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));
+                    
                     printf("Found entry in routing table.\n");
                     /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                     struct sr_arpcache *cache = &(sr->cache);
@@ -321,13 +324,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("eth2 ip is...\n");
                 print_addr_ip_int(forward_src_iface->ip);
                 /* Generate a random port for the entry for external info */
-                nat_entry->aux_ext = generate_unique_port(&(sr->nat));
+                nat_entry->aux_ext = (uint16_t) generate_unique_port(&(sr->nat));
             }else{
                 printf("Found a matching entry..\n");
             }
             /* Update this entry */
             nat_entry->last_updated = time(NULL);
             /* Update the packet info to external addr and port */
+            int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_ext;
             icmp_hdr->identifier = nat_entry->aux_ext;
             ip_packet->ip_src = nat_entry->ip_ext;
             printf("eth2 ip is...\n");
@@ -337,6 +341,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
            /* int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
             /*icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));*/
+            icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);
 
             
 
@@ -360,7 +365,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 ip_packet->ip_ttl --;
                 ip_packet->ip_sum = 0;
                 ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
-                icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));
+                
                 printf("Found entry in routing table.\n");
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
