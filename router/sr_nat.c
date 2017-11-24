@@ -1,9 +1,9 @@
-
 #include <signal.h>
 #include <assert.h>
 #include "sr_nat.h"
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 int sr_nat_init(struct sr_nat *nat) { /* Initializes the nat */
 
@@ -74,7 +74,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
   current = nat->mappings;
 
   while (current != NULL) {
-    if (current->type == type && current>aux_ext == aux_ext) {
+    if (current->type == type && current->aux_ext == aux_ext) {
       memcpy(copy, current, sizeof(sr_nat_mapping));
       break;
     }
@@ -120,9 +120,8 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
   /* handle insert here, create a mapping, and then return a copy of it */
   /*struct sr_nat_mapping *mapping = NULL;*/
   struct sr_nat_mapping *mapping = malloc(sizeof(struct sr_nat_mapping)); 
-  assert(newMapping != NULL);
 
-  mapping>type = type;
+  mapping->type = type;
   mapping->last_updated = time(NULL);
   mapping->ip_int = ip_int;
   mapping->aux_int = aux_int;
