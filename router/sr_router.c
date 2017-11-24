@@ -550,7 +550,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
                 sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) ((pkt->buf) + sizeof(sr_ethernet_hdr_t)+ sizeof(sr_ip_hdr_t));
                 
                 /* Handle echo req */
-                if (ip_proto == ip_protocol_icmp) { 
+                if (ip_proto == ip_protocol_icmp && !sr->nat_flag) { 
                     if(icmp_packet->icmp_type == 8){
 
                         uint32_t temp_ip_src = ip_packet->ip_src;
@@ -573,7 +573,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
                 /* Forward packet that is not a echo request */
                 memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
                 memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
-                printf("Sending outstanding packet.. \n");
+                printf("Sending outstanding packet.. (forward it..)\n");
                 sr_send_packet(sr, pkt->buf, pkt->len, interface);
                            
           }
