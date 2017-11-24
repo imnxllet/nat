@@ -8,7 +8,7 @@
  * This file contains all the functions that interact directly
  * with the routing table, as well as the main entry method
  * for routing.
- *
+ *tar -czvf pa1.tar.gz ./*
  **********************************************************************/
 
 #include <stdio.h>
@@ -222,6 +222,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 }else{
                     printf("didn;t found entry..shit\n");
+                    return 0;
                 }
                 /* Check if Routing Table has entry for targeted ip addr */
                 /* use lpm */
@@ -253,7 +254,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                         /* Add ARP req to quene*/
                         sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
-                                                 len,/*matching_entry->interface*/interface);
+                                                 len,matching_entry->interface/*interface*/);
+                        /**Tochange/
 
                         return 0;
 
@@ -745,7 +747,7 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type,
 }
 
 
-/* Find LPM in routing table */
+/* Find   in routing table */
 struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
 
     struct sr_rt *rtable = sr->routing_table;
