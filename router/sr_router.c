@@ -217,7 +217,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                    
                     /*int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 5));
+                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - sizeof(sr_ip_hdr_t));
                     /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
                 }else{
@@ -340,7 +340,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             print_hdrs(packet,len);
 
            /* int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-            icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 5));
+            icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - sizeof(sr_ip_hdr_t));
             /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
             
