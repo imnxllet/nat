@@ -16,13 +16,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "sr_nat.h"
 #include "sr_if.h"
 #include "sr_rt.h"
 #include "sr_router.h"
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
-#include "sr_nat.h"
+
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
  * Scope:  Global
@@ -231,6 +232,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
+            }
 
             /* Miss ARP */
             if (arpentry == NULL){
