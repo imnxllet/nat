@@ -44,7 +44,7 @@ struct sr_nat {
   /* New fields */
   int icmp_timeout_int;
   int tcp_idle_timeout;
-  int transitory_idle_timeout
+  int transitory_idle_timeout;
   struct sr_instance* sr;
 };
 
