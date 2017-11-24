@@ -228,12 +228,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
             /* DO NAT */
 
-            if (ip_proto == ip_protocol_icmp) { /* ICMP*/
-                break;
+            /* ICMP*/
+            /*if (ip_proto == ip_protocol_icmp) { */
+                
 
-            }else if(ip_proto == 0x0006){/* TCP */
+            /* TCP */
+           /* }else if(ip_proto == 0x0006){
                 break;
-            }
+            }*/
 
             /* Miss ARP */
             if (arpentry == NULL){
