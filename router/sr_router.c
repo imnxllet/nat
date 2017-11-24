@@ -101,7 +101,7 @@ void sr_handlepacket(struct sr_instance* sr,
     }
 
     /* Print ethenet packet header. */
-    print_hdrs(packet, len);
+    /*print_hdrs(packet, len);*/
 
     /* Check packet type */
     uint16_t ethtype = ethertype(packet);
@@ -117,6 +117,7 @@ void sr_handlepacket(struct sr_instance* sr,
         printf("This is a IP packet...\n");
 
         if(sr->nat_flag){
+            printf("Handling packet in nat mode..%s\n", );
             sr_nat_handleIPpacket(sr, packet, len, interface);
             return;
         }
@@ -414,7 +415,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
         arp_reply->ar_tip = arp_packet->ar_sip;
 
         printf("Sending back ARP reply...Detail below:\n");  
-        print_hdrs(eth_packet, len);         
+        /*print_hdrs(eth_packet, len);  */       
         
         return sr_send_packet(sr,eth_packet, /*uint8_t*/ /*unsigned int*/ len, interface);
    
@@ -529,7 +530,7 @@ int send_echo_reply(struct sr_instance* sr,char* iface, uint8_t * ori_packet, un
     icmp_packet->icmp_sum = cksum(icmp_packet, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));
 
     printf("Echo reply as folllow: \n");
-    print_hdrs(ori_packet, len);
+    /*print_hdrs(ori_packet, len);*/
 
 
     return sr_send_packet(sr,ori_packet, /*uint8_t*/ /*unsigned int*/ len, iface);
@@ -590,7 +591,7 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type,
     ip_packet->ip_sum = cksum(ip_packet, sizeof(sr_ip_hdr_t));
 
     printf("Eth pakcet prepared, ready to send...\n");
-    print_hdrs(eth_packet, len);
+    /*print_hdrs(eth_packet, len);*/
     printf("--------------------------\n");
     return sr_send_packet(sr,eth_packet, /*uint8_t*/ /*unsigned int*/ len, iface);
 
