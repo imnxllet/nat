@@ -209,6 +209,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 /* No mapping found.. */
                 if (nat_entry != NULL) {
+                    printf("found entry..\n");
                     ip_packet->ip_dst = nat_entry->ip_int;
                     icmp_hdr->identifier = nat_entry->aux_int;
                     nat_entry->last_updated = time(NULL);
@@ -216,6 +217,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                    
                     int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
                     icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
+                }else{
+                    printf("didn;t found entry..shit\n");
                 }
                 /* Check if Routing Table has entry for targeted ip addr */
                 /* use lpm */
