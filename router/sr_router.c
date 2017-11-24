@@ -553,7 +553,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
                 if (ip_proto == ip_protocol_icmp) { 
                     if(icmp_packet->icmp_type == 8){
                         /* Check if this packet is sent to external host..*/
-                        struct is_router* checkDestIsIface(ip_packet->ip_dst, sr);
+                        struct sr_if* is_router = checkDestIsIface(ip_packet->ip_dst, sr);
                         if(is_router == NULL){
                             memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
                             memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
