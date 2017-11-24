@@ -733,7 +733,7 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
     return match;
 }
 
-uint32_t icmp_cksum (sr_icmp_t3_hdr_t *icmpHdr, int len) {
+uint32_t icmp_cksum (struct sr_icmp_t3_hdr_t *icmpHdr, int len) {
     uint16_t currChksum, calcChksum;
 
     currChksum = icmpHdr->icmp_sum; 
