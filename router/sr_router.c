@@ -308,6 +308,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 nat_entry->ip_ext = sr_get_interface(sr, NAT_EXTERNAL_INTERFACE)->ip;
                 /* Generate a random port for the entry for external info */
                 nat_entry->aux_ext = generate_unique_port(&(sr->nat));
+            }else{
+                printf("Found a matching entry..\n");
             }
             /* Update this entry */
             nat_entry->last_updated = time(NULL);
@@ -562,7 +564,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
 
                         memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
                         memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
-                        printf("Sending outstanding packet.. \n");
+                        printf("Sending outstanding packet.. (echo req...)\n");
                         sr_send_packet(sr, pkt->buf, pkt->len, interface);
                         continue;
                     }
