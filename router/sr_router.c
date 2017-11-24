@@ -214,13 +214,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
-
-            /* DO NAT */
-
-            if (ip_proto == ip_protocol_icmp) { /* ICMP*/
-
-            }else if(ip_proto == 0x0006){/* TCP */
-                printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
+            printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
                 /* Locate the icmp header.. */
                 sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
@@ -232,6 +226,13 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
+            /* DO NAT */
+
+            if (ip_proto == ip_protocol_icmp) { /* ICMP*/
+                break;
+
+            }else if(ip_proto == 0x0006){/* TCP */
+                break;
             }
 
             /* Miss ARP */
