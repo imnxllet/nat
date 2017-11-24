@@ -76,7 +76,7 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
 
   while (current != NULL) {
     if (current->type == type && current->aux_ext == aux_ext) {
-      memcpy(copy, current, sizeof(sr_nat_mapping));
+      memcpy(copy, current, sizeof(struct sr_nat_mapping));
       break;
     }
     current = current->next;
@@ -99,8 +99,8 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
   current = nat->mappings;
 
   while (current != NULL) {
-    if (current->type == type && current->aux_ext == aux_ext && current->ip_int == ip_int) {
-      memcpy(copy, current, sizeof(sr_nat_mapping));
+    if (current->type == type && current->aux_int == aux_int && current->ip_int == ip_int) {
+      memcpy(copy, current, sizeof(struct sr_nat_mapping));
       break;
     }
     current = current->next;
