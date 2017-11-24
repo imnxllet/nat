@@ -191,12 +191,86 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             }
 
         /* Packet targeted to router, but it's from EXTERNAL. Need to do NAT...*/
+        /* Packet comes from server1/2 to router.... translate NAT addr to internal ..*/
+        /* check type of IP: icmp, tcp????*/
         }else{
             printf("Packet from external... Should update its dest addr to internal..\n");
+
+            if (ip_proto == ip_protocol_icmp) { 
+                printf("Doing NAT for icmp that is targeting external host...\n");
+
+                /* Locate icmp header.. */
+                sr_icmp_t3_hdr_t *icmp_hdr = (sr_icmp_t3_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+                /* Look up external addr/port pair given internal info */
+                struct sr_nat_mapping *nat_entry = sr_nat_lookup_external(&(sr->nat), icmp_hdr->identifier, nat_mapping_icmp);
+
+                /* No mapping found.. */
+                if (nat_entry != NULL) {
+                    ip_packet->ip_dst = nat_entry->ip_int;
+                    icmp_hdr->identifier = nat_entry->aux_int;
+                    nat_entry->last_updated = time(NULL);
+
+                    ip_packet->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+                    int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+                    icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
+                }
+                /* Check if Routing Table has entry for targeted ip addr */
+                /* use lpm */
+                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        
+                /* Found destination in routing table*/
+                if(matching_entry != NULL){
+                    printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
+                    /* Locate the icmp header.. */
+                    sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+                    /* Adjust TTL and checksum */
+                    ip_packet->ip_ttl --;
+                    ip_packet->ip_sum = 0;
+                    ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+                    printf("Found entry in routing table.\n");
+                    /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
+                    struct sr_arpcache *cache = &(sr->cache);
+                    struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
+         
+
+                /* Miss ARP */
+                if (arpentry == NULL){
+                    printf("Miss in ARP cache table..\n");
+                    /* Send ARP request for 5 times. 
+                    If no response, send ICMP host Unreachable.*/
+
+                    /* Add ARP req to quene*/
+                    sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
+                                             len,/*matching_entry->interface*/interface);
+
+                    return 0;
+
+                }else{/* Hit */
+                    printf("Hit in ARP cahce table...\n");
+
+                    /* Adjust ethernet packet and forward to next-hop */
+                    memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
+                    struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
+                    memcpy(((sr_ethernet_hdr_t *)packet)->ether_shost, forward_src_iface->addr, ETHER_ADDR_LEN);
+                    free(arpentry);
+              
+                    return sr_send_packet(sr,packet, len, matching_entry->interface);
+                }
+
+                
+
+            /* TCP */
+            }else if(ip_proto == 0x0006){
+                printf("Doing NAT for tcp that is targeting external host...\n");
+                
+            }
             return 0;
 
         }
 
+    /* Packets targeted to Server1/2... Turn the internal addr to NAT addr... */
     /* Packet should be forwarded. Do NAT before forward.*/
     }else{
         /* Check if TTL is 0 or 1, send Time out accordingly. */
@@ -206,8 +280,47 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             return sendICMPmessage(sr, 11, 0, interface, packet);
         }
         printf("This packet is not for router...should be forwarded..\n");
-        printf("Stop here first...\n");
-        return 0;
+       
+
+       /* DO NAT */
+
+        /* ICMP*/
+        if (ip_proto == ip_protocol_icmp) { 
+            printf("Doing NAT for icmp that is targeting external host...\n");
+
+            /* Locate icmp header.. */
+            sr_icmp_t3_hdr_t *icmp_hdr = (sr_icmp_t3_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+            /* Look up external addr/port pair given internal info */
+            struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src,, icmp_hdr->identifier, nat_mapping_icmp);
+
+            /* No mapping found.. */
+            if (nat_entry == NULL) {
+                /* Insert mapping entry with internal source ip and icmp id */
+                nat_entry = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, icmp_hdr->identifier, nat_mapping_icmp);
+
+                /* Add external ip(eth2) and port to mapping entry */
+                nat_entry->ip_ext = sr_get_interface(sr, NAT_EXTERNAL_INTERFACE)->ip;
+                /* Generate a random port for the entry for external info */
+                nat_entry->aux_ext = generate_unique_port(&(sr->nat));
+            }
+            /* Update this entry */
+            nat_entry->last_updated = time(NULL);
+            /* Update the packet info to external addr and port */
+            icmp_hdr->identifier = nat_entry->aux_ext;
+            ip_packet->ip_src = nat_entry->ip_ext;
+
+            int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+            icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
+            ip_packet->ip_sum = 0;
+            ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+            
+
+        /* TCP */
+       }else if(ip_proto == 0x0006){
+        printf("Doing NAT for tcp that is targeting external host...\n");
+            
+        }
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
@@ -227,16 +340,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
-            /* DO NAT */
-
-            /* ICMP*/
-            /*if (ip_proto == ip_protocol_icmp) { */
-                
-
-            /* TCP */
-           /* }else if(ip_proto == 0x0006){
-                break;
-            }*/
+         
 
             /* Miss ARP */
             if (arpentry == NULL){
@@ -623,4 +727,15 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
     }
 
     return match;
+}
+
+uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len) {
+    uint16_t currChksum, calcChksum;
+
+    currChksum = icmpHdr->icmp_sum; 
+    icmpHdr->icmp_sum = 0;
+    calcChksum = cksum(icmpHdr, len);
+    icmpHdr->icmp_sum = currChksum;
+
+    return calcChksum;
 }

@@ -94,8 +94,8 @@ struct sr_icmp_t3_hdr {
   uint8_t icmp_type;
   uint8_t icmp_code;
   uint16_t icmp_sum;
-  uint16_t unused;
-  uint16_t next_mtu;
+  uint16_t identifier;
+  uint16_t seq_num;
   uint8_t data[ICMP_DATA_SIZE];
 
 } __attribute__ ((packed)) ;

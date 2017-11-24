@@ -25,6 +25,7 @@ int sr_nat_init(struct sr_nat *nat) { /* Initializes the nat */
   /* CAREFUL MODIFYING CODE ABOVE THIS LINE! */
 
   nat->mappings = NULL;
+  memset(nat->ports, 0, TOTAL_PORTS);
   /* Initialize any variables here */
 
   return success;
@@ -67,7 +68,18 @@ struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
   pthread_mutex_lock(&(nat->lock));
 
   /* handle lookup here, malloc and assign to copy */
-  struct sr_nat_mapping *copy = NULL;
+  /**/
+  struct sr_nat_mapping *current = NULL;
+  struct sr_nat_mapping *copy = malloc(sizeof(sr_nat_mapping));
+  current = nat->mappings;
+
+  while (current != NULL) {
+    if (current->type == type && current>aux_ext == aux_ext) {
+      memcpy(copy, current, sizeof(sr_nat_mapping));
+      break;
+    }
+    current = current->next;
+  }
 
   pthread_mutex_unlock(&(nat->lock));
   return copy;
@@ -81,7 +93,17 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
   pthread_mutex_lock(&(nat->lock));
 
   /* handle lookup here, malloc and assign to copy. */
-  struct sr_nat_mapping *copy = NULL;
+  struct sr_nat_mapping *current = NULL;
+  struct sr_nat_mapping *copy = malloc(sizeof(sr_nat_mapping));
+  current = nat->mappings;
+
+  while (current != NULL) {
+    if (current->type == type && current>aux_ext == aux_ext && current->ip_int == ip_int) {
+      memcpy(copy, current, sizeof(sr_nat_mapping));
+      break;
+    }
+    current = current->next;
+  }
 
   pthread_mutex_unlock(&(nat->lock));
   return copy;
@@ -96,7 +118,20 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
   pthread_mutex_lock(&(nat->lock));
 
   /* handle insert here, create a mapping, and then return a copy of it */
-  struct sr_nat_mapping *mapping = NULL;
+  /*struct sr_nat_mapping *mapping = NULL;*/
+  struct sr_nat_mapping *mapping = malloc(sizeof(struct sr_nat_mapping)); 
+  assert(newMapping != NULL);
+
+  mapping>type = type;
+  mapping->last_updated = time(NULL);
+  mapping->ip_int = ip_int;
+  mapping->aux_int = aux_int;
+  mapping->conns = NULL;
+
+  struct sr_nat_mapping *head_mapping = nat->mappings;
+  nat->mappings = mapping;
+  mapping->next = head_mapping;
+
 
   pthread_mutex_unlock(&(nat->lock));
   return mapping;
@@ -110,4 +145,26 @@ int is_nat_internal_iface(char *iface) {
 /* Check if packer incoming interface is eth2 */
 int is_nat_external_iface(char *iface) {
   return strcmp(iface, NAT_EXTERNAL_INTERFACE) == 0 ? 1 : 0;
+}
+
+/* Generate a port for external mapping */
+int generate_unique_port(struct sr_nat *nat) {
+
+  pthread_mutex_lock(&(nat->lock));
+
+  uint16_t *available_ports = nat->ports;
+  int i;
+
+  for (i = MIN_PORT; i <= TOTAL_PORTS; i++) {
+    if (available_ports[i] == 0) {
+      available_ports[i] = 1;
+      printf("Allocated port: %d\n", i);
+
+      pthread_mutex_unlock(&(nat->lock));
+      return i;
+    }
+  }
+
+  pthread_mutex_unlock(&(nat->lock));
+  return -1;
 }

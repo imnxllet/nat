@@ -80,6 +80,7 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type, uint8_t icmp_code
 int send_echo_reply(struct sr_instance* sr, char* iface, uint8_t * ori_packet, unsigned int len, struct sr_arpentry* arpentry);
 struct sr_rt *longest_prefix_match(struct sr_instance* sr, uint32_t ip);
 int sr_nat_handleIPpacket(struct sr_instance* sr,uint8_t * packet,unsigned int len,char* interface);
+uint32_t icmp_cksum (sr_icmp_hdr_t *icmpHdr, int len); 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
 void sr_set_ether_ip(struct sr_instance* , uint32_t );

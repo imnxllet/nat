@@ -3,6 +3,8 @@
 #define SR_NAT_TABLE_H
 #define NAT_INTERNAL_INTERFACE "eth1"
 #define NAT_EXTERNAL_INTERFACE "eth2"
+#define TOTAL_PORTS 65535
+#define MIN_PORT 1024
 
 #include <inttypes.h>
 #include <time.h>
@@ -46,6 +48,9 @@ struct sr_nat {
   int tcp_idle_timeout;
   int transitory_idle_timeout;
   struct sr_instance* sr;
+
+  /* Ports available to use for new mapping */
+  uint16_t ports[TOTAL_PORTS];
 };
 
 
@@ -54,6 +59,7 @@ int   sr_nat_destroy(struct sr_nat *nat);  /* Destroys the nat (free memory) */
 void *sr_nat_timeout(void *nat_ptr);  /* Periodic Timout */
 int is_nat_internal_iface(char *iface);
 int is_nat_external_iface(char *iface);
+int generate_unique_port(struct sr_nat *nat);
 /* Get the mapping associated with given external port.
    You must free the returned structure if it is not NULL. */
 struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,
