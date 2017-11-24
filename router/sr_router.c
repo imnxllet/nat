@@ -191,7 +191,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         /* Packet targeted to router, but it's from EXTERNAL. Need to do NAT...*/
         }else{
             printf("Packet from external... Should update its dest addr to internal..\n");
-            return;
+            return 0;
 
         }
 
@@ -205,7 +205,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         }
         printf("This packet is not for router...should be forwarded..\n");
         printf("Stop here first...\n");
-        return;
+        return 0;
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
