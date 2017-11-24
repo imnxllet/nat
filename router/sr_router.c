@@ -211,14 +211,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 if (nat_entry != NULL) {
                     printf("found entry..\n");
                     ip_packet->ip_dst = nat_entry->ip_int;
-                    int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_int;
+                    /*int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_int;*/
                     icmp_hdr->identifier = nat_entry->aux_int;
                     nat_entry->last_updated = time(NULL);
 
                    
                     /*int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-                    /*icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));*/
-                    icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);
+                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 5));
+                    /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
                 }else{
                     printf("didn;t found entry..shit\n");
@@ -331,7 +331,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Update this entry */
             nat_entry->last_updated = time(NULL);
             /* Update the packet info to external addr and port */
-            int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_ext;
+            /*int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_ext;*/
             icmp_hdr->identifier = nat_entry->aux_ext;
             ip_packet->ip_src = nat_entry->ip_ext;
             printf("eth2 ip is...\n");
@@ -340,8 +340,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             print_hdrs(packet,len);
 
            /* int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-            /*icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));*/
-            icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);
+            icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 5));
+            /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
             
 
