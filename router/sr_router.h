@@ -58,7 +58,7 @@ struct sr_instance
     FILE* logfile;
 
     int nat_flag;
-    struct sr_nat* nat;/* NAT */
+    struct sr_nat nat;/* NAT */
 };
 
 /* -- sr_main.c -- */

@@ -53,12 +53,12 @@ void sr_init(struct sr_instance* sr, int nat, int icmp_timeout_int, int tcp_idle
 
     /**/
     if (nat){
-        sr_nat_init(sr->nat);
-        (sr->nat)->icmp_timeout_int = icmp_timeout_int;
-        (sr->nat)->tcp_idle_timeout = tcp_idle_timeout;
-        (sr->nat)->transitory_idle_timeout = transitory_idle_timeout;
+        sr_nat_init(&(sr->nat));
+        (sr->nat).icmp_timeout_int = icmp_timeout_int;
+        (sr->nat).tcp_idle_timeout = tcp_idle_timeout;
+        (sr->nat).transitory_idle_timeout = transitory_idle_timeout;
         /* Do I need this tho...*/
-        (sr->nat)->sr = sr;
+        (sr->nat).sr = sr;
     }
     
 } /* -- sr_init -- */
