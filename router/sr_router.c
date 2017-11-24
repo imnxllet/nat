@@ -532,6 +532,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
 
     }else if(arp_packet->ar_op == htons(arp_op_reply)){
         printf("This is an ARP reply...\n"); 
+        print_hdrs(arp_packet, len);
 
         /* cache it */
         printf("Caching the ip->mac entry \n");
