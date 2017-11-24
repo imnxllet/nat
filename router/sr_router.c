@@ -217,7 +217,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                    
                     /*int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - sizeof(sr_ip_hdr_t));
+                    
                     /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
                 }else{
@@ -237,7 +237,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     ip_packet->ip_ttl --;
                     ip_packet->ip_sum = 0;
                     ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
-                    
+                    icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 4));
                     printf("Found entry in routing table.\n");
                     /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                     struct sr_arpcache *cache = &(sr->cache);
@@ -340,7 +340,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             print_hdrs(packet,len);
 
            /* int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);*/
-            icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - sizeof(sr_ip_hdr_t));
+            
             /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
             
@@ -365,6 +365,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 ip_packet->ip_ttl --;
                 ip_packet->ip_sum = 0;
                 ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+                icmp_hdr->icmp_sum = cksum(icmp_hdr, ntohs(ip_packet->ip_len) - (ip_packet->ip_hl * 5));
                 
                 printf("Found entry in routing table.\n");
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
