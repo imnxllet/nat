@@ -113,15 +113,15 @@ int main(int argc, char **argv)
             case 'n':
                 nat = 1;
                 break;
-            case 'l':
+            case 'I':
                 icmp_timeout_int = atoi((char *)optarg);
                 /* Check min */
                 break;
-            case 'r':
+            case 'E':
                 tcp_idle_timeout = atoi((char *)optarg);
                 /* Check min */
                 break;
-            case 'T':
+            case 'R':
                 transitory_idle_timeout = atoi((char *)optarg);
                 /* Check min */
                 break;   
