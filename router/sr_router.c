@@ -300,6 +300,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             /* No mapping found.. */
             if (nat_entry == NULL) {
+                printf("No mapping entry found, makeing one...\n");
                 /* Insert mapping entry with internal source ip and icmp id */
                 nat_entry = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, icmp_hdr->identifier, nat_mapping_icmp);
 
@@ -316,13 +317,12 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             int icmpOffset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
             icmp_hdr->icmp_sum = icmp_cksum(icmp_hdr, len - icmpOffset);
-            ip_packet->ip_sum = 0;
-            ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+
             
 
         /* TCP */
-       }else if(ip_proto == 0x0006){
-        printf("Doing NAT for tcp that is targeting external host...\n");
+        }else if(ip_proto == 0x0006){
+            printf("Doing NAT for tcp that is targeting external host...\n");
             
         }
         
