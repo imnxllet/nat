@@ -44,6 +44,9 @@ extern char* optarg;
 #define DEFAULT_SERVER "localhost"
 #define DEFAULT_RTABLE "rtable"
 #define DEFAULT_TOPO 0
+#define DEFAULT_ICMP_QUERY_TIMEOUT_INTERVAL 60
+#define DEFAULT_TCP_ESTABLISHED_IDLE_TIMEOUT 7440
+#define DEFAULT_TRANSITORY_IDLE_TIMEOUT 300
 
 static void usage(char* );
 static void sr_init_instance(struct sr_instance* );
@@ -66,6 +69,11 @@ int main(int argc, char **argv)
     unsigned int topo = DEFAULT_TOPO;
     char *logfile = 0;
     struct sr_instance sr;
+
+    int nat = 0;
+    int icmp_timeout_int = DEFAULT_ICMP_QUERY_TIMEOUT_INTERVAL;
+    int tcp_idle_timeout = DEFAULT_TCP_ESTABLISHED_IDLE_TIMEOUT;
+    int transitory_idle_timeout = DEFAULT_TRANSITORY_IDLE_TIMEOUT;
 
     printf("Using %s\n", VERSION_INFO);
 
@@ -101,6 +109,22 @@ int main(int argc, char **argv)
             case 'T':
                 template = optarg;
                 break;
+            /*Nat*/
+            case 'n':
+                nat = 1;
+                break;
+            case 'l':
+                icmp_timeout_int = atoi((char *)optarg);
+                /* Check min */
+                break;
+            case 'r':
+                tcp_idle_timeout = atoi((char *)optarg);
+                /* Check min */
+                break;
+            case 'T':
+                transitory_idle_timeout = atoi((char *)optarg);
+                /* Check min */
+                break;   
         } /* switch */
     } /* -- while -- */
 
@@ -157,7 +181,12 @@ int main(int argc, char **argv)
     }
 
     /* call router init (for arp subsystem etc.) */
-    sr_init(&sr);
+    /*sr_init(&sr);*/
+    if(nat == 1){
+        sr_init(&sr, nat, icmp_timeout_int, tcp_idle_timeout, transitory_idle_timeout);
+    }else{
+        sr_init(&sr, nat, 0, 0, 0);
+    }
 
     /* -- whizbang main loop ;-) */
     while( sr_read_from_server(&sr) == 1);

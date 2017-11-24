@@ -22,7 +22,7 @@
 #include "sr_protocol.h"
 #include "sr_arpcache.h"
 #include "sr_utils.h"
-
+#include "sr_nat.h"
 /*---------------------------------------------------------------------
  * Method: sr_init(void)
  * Scope:  Global
@@ -31,7 +31,7 @@
  *
  *---------------------------------------------------------------------*/
 
-void sr_init(struct sr_instance* sr)
+void sr_init(struct sr_instance* sr, int nat, int icmp_timeout_int, int tcp_idle_timeout, int transitory_idle_timeout)
 {
     /* REQUIRES */
     assert(sr);
@@ -48,7 +48,18 @@ void sr_init(struct sr_instance* sr)
     pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
     
     /* Add initialization code here! */
+    sr->nat_flag = nat;
 
+    /**/
+    if (nat){
+        sr_nat_init(&(sr->nat));
+        (sr->nat)->icmp_timeout_int = icmp_timeout_int;
+        (sr->nat)->tcp_idle_timeout = tcp_idle_timeout;
+        (sr->nat)->transitory_idle_timeout = transitory_idle_timeout;
+        /* Do I need this tho...*/
+        (sr->nat)->sr = sr;
+    }
+    
 } /* -- sr_init -- */
 
 /*---------------------------------------------------------------------
@@ -103,6 +114,11 @@ void sr_handlepacket(struct sr_instance* sr,
         }
 
         printf("This is a IP packet...\n");
+
+        if(sr->nat_flag){
+            sr_nat_handleIPpacket(sr, packet, len, interface);
+            return;
+        }
         sr_handleIPpacket(sr, packet, len, interface); 
         return;
 
@@ -123,6 +139,130 @@ void sr_handlepacket(struct sr_instance* sr,
         return;
     }
 }/* end sr_handlepacket */
+
+/* HANDLE IP packet when NAT mode enabled. */
+int sr_nat_handleIPpacket(struct sr_instance* sr,
+        uint8_t * packet,
+        unsigned int len,
+        char* interface){
+
+    /* Process the IP packet.. */
+    sr_ip_hdr_t *ip_packet = (sr_ip_hdr_t*) (packet + sizeof(sr_ethernet_hdr_t));
+
+    /* TO-DO: Essentially we need to check if this packet is ipv4*/
+
+    /* See if this packet is for me or not. */
+    struct sr_if *target_if = (struct sr_if*) checkDestIsIface(ip_packet->ip_dst, sr);
+    uint8_t ip_proto = ip_protocol((uint8_t *) ip_packet);
+    
+    /* This packet is for one of the interfaces */
+    if(target_if != NULL){
+        /* Check if it's ICMP or TCP/UDP */
+        /*uint8_t ip_proto = ip_protocol((uint8_t *) ip_packet);*/
+
+        /* PING from client to router throgh eth1. */
+        if(is_nat_internal_iface(interface)){
+
+            if (ip_proto == ip_protocol_icmp) { /* ICMP, send echo reply */
+                printf("This packet is for me(Echo Req), Initialize ARP req..\n");
+                
+                struct sr_arpcache *cache = &(sr->cache);
+                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
+                struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
+                
+                if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
+                    return send_echo_reply(sr, interface, packet, len, arpentry);
+                }else{/* Send ARP req to find the echo req src MAC addr*/
+                    sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,len,interface);
+                    return 0;
+                }
+
+            /* TCP/UDP, Send ICMP Port Unreachable */
+            }else if(ip_proto == 0x0006 || ip_proto == 0x11){ 
+              printf("This packet is for me(TCP/UDP), send port unreachable back...\n");
+              return sendICMPmessage(sr, 3, 3, interface, packet);
+            
+            /* Unknow IP packet type */
+            }else{
+              printf("This packet is for me, but type not recognized, drop it...\n");
+              return -1;
+            }
+
+        /* Packet targeted to router, but it's from EXTERNAL. Need to do NAT...*/
+        }else{
+            printf("Packet from external... Should update its dest addr to internal..\n");
+            return;
+
+        }
+
+    /* Packet should be forwarded. Do NAT before forward.*/
+    }else{
+        /* Check if TTL is 0 or 1, send Time out accordingly. */
+        if(ip_packet->ip_ttl == 1 || ip_packet->ip_ttl == 0){
+            printf("TTL too short, send ICMP\n");
+            /* Check arp cache before send back...*/
+            return sendICMPmessage(sr, 11, 0, interface, packet);
+        }
+        printf("This packet is not for router...should be forwarded..\n");
+        printf("Stop here first...\n");
+        return;
+        
+        /* Check if Routing Table has entry for targeted ip addr */
+        /* use lpm */
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        
+        /* Found destination in routing table*/
+        if(matching_entry != NULL){
+
+            /* DO NAT */
+
+            if (ip_proto == ip_protocol_icmp) { /* ICMP*/
+
+            }else if(ip_proto == 0x0006){/* TCP */
+                printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
+                /* Locate the icmp header.. */
+                sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+
+                /* Adjust TTL and checksum */
+                ip_packet->ip_ttl --;
+                ip_packet->ip_sum = 0;
+                ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
+                printf("Found entry in routing table.\n");
+                /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
+                struct sr_arpcache *cache = &(sr->cache);
+                struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
+
+            /* Miss ARP */
+            if (arpentry == NULL){
+                printf("Miss in ARP cache table..\n");
+                /* Send ARP request for 5 times. 
+                 If no response, send ICMP host Unreachable.*/
+
+                /* Add ARP req to quene*/
+                sr_arpcache_queuereq(&(sr->cache),(uint32_t)((matching_entry->gw).s_addr),packet,           /* borrowed */
+                                             len,/*matching_entry->interface*/interface);
+
+                return 0;
+
+            }else{/* Hit */
+                printf("Hit in ARP cahce table...\n");
+
+                /* Adjust ethernet packet and forward to next-hop */
+                memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
+                struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
+                memcpy(((sr_ethernet_hdr_t *)packet)->ether_shost, forward_src_iface->addr, ETHER_ADDR_LEN);
+                free(arpentry);
+              
+                return sr_send_packet(sr,packet, len, matching_entry->interface);
+            }
+
+        }else{/* No match in routing table */
+          printf("Did not find target ip in rtable..\n");
+          return sendICMPmessage(sr, 3, 0, interface, packet);
+        }
+    }
+    return 0;
+}
 
 
 /* Handle IP Packet */

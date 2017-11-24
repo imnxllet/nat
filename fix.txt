@@ -1,0 +1,18 @@
+He is a list of PA2 bugs I have found so far. I'll edit this as I find more:
+
+~\cs144_lab5\lab5.py uses the wrong notation for functions. It uses x_y() intead of xY(). So you'll need to go in and change add_host() to addHost() for example
+If you run
+pwd
+/> home/ubuntu/cs144_lab5
+rm router
+cp -r ~/cs144_lab3/router ./
+like the handout tells you to you will overwrite the makefile. You'll need to put back in sr_nat.h and sr_nat.c
+
+3.) TCP doesn't work. If you try using wget with the sample solution you get connection refused. The solution to this is to copy http_server1 and http_server2 from cs144_lab3 into cs144_lab5. When I first did this I got "Routing table not consistent with hardware". I'm not sure how I fixed it honestly, it just sort of went away. I think maybe I just killed mininet and pox and restarted them.
+
+
+
+xterm server1 fix:
+download xquartz 
+In Mac OS X, you may need to edit your sshd_config file (typically found at /etc/sshd_config or /etc/ssh/sshd_config) if you have trouble using X forwarding. If sshd_config includes #X11Forwarding no (or just X11Forwarding no), uncomment out the line (i.e., remove the leading #), and change it to X11Forwarding yes.
+https://kb.iu.edu/d/bdnt

@@ -55,6 +55,9 @@ struct sr_instance
     struct sr_arpcache cache;   /* ARP cache */
     pthread_attr_t attr;
     FILE* logfile;
+
+    int nat_flag;
+    struct sr_nat nat;/* NAT */
 };
 
 /* -- sr_main.c -- */
@@ -66,7 +69,8 @@ int sr_connect_to_server(struct sr_instance* ,unsigned short , char* );
 int sr_read_from_server(struct sr_instance* );
 
 /* -- sr_router.c -- */
-void sr_init(struct sr_instance* );
+/*void sr_init(struct sr_instance* );*/
+void sr_init(struct sr_instance* sr, int nat, int icmp_timeout_int, int tcp_idle_timeout, int transitory_idle_timeout);
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
 int sr_handleIPpacket(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);
 int sr_handleARPpacket(struct sr_instance* sr, uint8_t * packet, unsigned int len, char* interface);

@@ -1,6 +1,8 @@
 
 #ifndef SR_NAT_TABLE_H
 #define SR_NAT_TABLE_H
+#define NAT_INTERNAL_INTERFACE "eth1"
+#define NAT_EXTERNAL_INTERFACE "eth2"
 
 #include <inttypes.h>
 #include <time.h>
@@ -38,13 +40,20 @@ struct sr_nat {
   pthread_mutexattr_t attr;
   pthread_attr_t thread_attr;
   pthread_t thread;
+
+  /* New fields */
+  int icmp_timeout_int;
+  int tcp_idle_timeout;
+  int transitory_idle_timeout
+  struct sr_instance* sr;
 };
 
 
 int   sr_nat_init(struct sr_nat *nat);     /* Initializes the nat */
 int   sr_nat_destroy(struct sr_nat *nat);  /* Destroys the nat (free memory) */
 void *sr_nat_timeout(void *nat_ptr);  /* Periodic Timout */
-
+int is_nat_internal_iface(char *iface);
+int is_nat_external_iface(char *iface);
 /* Get the mapping associated with given external port.
    You must free the returned structure if it is not NULL. */
 struct sr_nat_mapping *sr_nat_lookup_external(struct sr_nat *nat,

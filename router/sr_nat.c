@@ -36,6 +36,7 @@ int sr_nat_destroy(struct sr_nat *nat) {  /* Destroys the nat (free memory) */
 
   /* free nat memory here */
 
+
   pthread_kill(nat->thread, SIGKILL);
   return pthread_mutex_destroy(&(nat->lock)) &&
     pthread_mutexattr_destroy(&(nat->attr));
@@ -98,4 +99,14 @@ struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
 
   pthread_mutex_unlock(&(nat->lock));
   return mapping;
+}
+
+/* Check if packer incoming interface is eth1 */
+int is_nat_internal_iface(char *iface) {
+  return strcmp(iface, NAT_INTERNAL_INTERFACE) == 0 ? 1 : 0;
+}
+
+/* Check if packer incoming interface is eth2 */
+int is_nat_external_iface(char *iface) {
+  return strcmp(iface, NAT_EXTERNAL_INTERFACE) == 0 ? 1 : 0;
 }
