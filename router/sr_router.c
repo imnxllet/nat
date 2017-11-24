@@ -565,7 +565,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
                         memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
                         memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
                         printf("Sending outstanding packet.. (echo req...)\n");
-                        
+                        print_hdrs(pkt->buf, pkt->len);
                         sr_send_packet(sr, pkt->buf, pkt->len, interface);
                         continue;
                     }
