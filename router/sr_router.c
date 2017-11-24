@@ -550,8 +550,18 @@ int sr_handleARPpacket(struct sr_instance* sr,
                 sr_icmp_hdr_t *icmp_packet = (sr_icmp_hdr_t *) ((pkt->buf) + sizeof(sr_ethernet_hdr_t)+ sizeof(sr_ip_hdr_t));
                 
                 /* Handle echo req */
-                if (ip_proto == ip_protocol_icmp && !sr->nat_flag) { 
+                if (ip_proto == ip_protocol_icmp) { 
                     if(icmp_packet->icmp_type == 8){
+
+                        if(sr->nat_flag){
+                            memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
+                            memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
+                            printf("Sending outstanding packet.. (nat echo.....)\n");
+                            print_hdrs(pkt->buf, pkt->len);
+                            sr_send_packet(sr, pkt->buf, pkt->len, interface);
+                            sr_arpreq_destroy(cache, cached_req);
+                            return 0;
+                        }
 
                         uint32_t temp_ip_src = ip_packet->ip_src;
                         ip_packet->ip_src = ip_packet->ip_dst;
@@ -565,7 +575,7 @@ int sr_handleARPpacket(struct sr_instance* sr,
                         memcpy(pack->ether_dhost, arp_packet->ar_sha, ETHER_ADDR_LEN);
                         memcpy(pack->ether_shost, arp_packet->ar_tha, ETHER_ADDR_LEN);
                         printf("Sending outstanding packet.. (echo req...)\n");
-                        print_hdrs(pkt->buf, pkt->len);
+                        
                         sr_send_packet(sr, pkt->buf, pkt->len, interface);
                         continue;
                     }
