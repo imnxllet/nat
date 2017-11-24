@@ -312,6 +312,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 /* Add external ip(eth2) and port to mapping entry */
                 nat_entry->ip_ext = forward_src_iface->ip;
+                printf("eth2 ip is...\n");
+                print_addr_ip_int(forward_src_iface->ip);
                 /* Generate a random port for the entry for external info */
                 nat_entry->aux_ext = generate_unique_port(&(sr->nat));
             }else{
@@ -322,6 +324,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Update the packet info to external addr and port */
             icmp_hdr->identifier = nat_entry->aux_ext;
             ip_packet->ip_src = nat_entry->ip_ext;
+            printf("eth2 ip is...\n");
+                print_addr_ip_int(ip_packet->ip_src);
             printf("After NAT... headers like this\n");
             print_hdrs(packet,len);
 
