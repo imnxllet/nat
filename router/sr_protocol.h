@@ -92,7 +92,7 @@ struct sr_tcp_hdr {
   uint16_t dst_port;
   uint32_t seq;
   uint32_t ack;
-  uint8_t  data_offset;  // 4 bits
+  uint8_t  data_offset;  /*4 bits*/
   #if __BYTE_ORDER == __LITTLE_ENDIAN
     unsigned int fin:1;
     unsigned int syn:1;
@@ -118,7 +118,7 @@ struct sr_tcp_hdr {
   uint16_t checksum;
   uint16_t urgent_p;
 } __attribute__ ((packed)) ;
-typedef struct sr_icmp_hdr sr_tcp_hdr_t;
+typedef struct sr_tcp_hdr sr_tcp_hdr_t;
 
 
 /* Structure of a type3 ICMP header

@@ -8,7 +8,7 @@
  * This file contains all the functions that interact directly
  * with the routing table, as well as the main entry method
  * for routing.
- *tar -czvf pa1.tar.gz ./*
+ *tar -czvf pa1.tar.gz ./ *
  **********************************************************************/
 
 #include <stdio.h>
@@ -240,7 +240,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   /* Critical section, make sure you lock, careful modifying code under critical section. */
                   pthread_mutex_lock(&((sr->nat).lock));
 
-                  struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_lookup, ipSrc);
+                  struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_lookup, ip_packet->ip_src);
                   if (tcp_con == NULL) {
                     tcp_con = sr_nat_insert_tcp_con(nat_lookup, ipSrc);
                   }
