@@ -242,7 +242,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                   struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_lookup, ip_packet->ip_src);
                   if (tcp_con == NULL) {
-                    tcp_con = sr_nat_insert_tcp_con(nat_lookup, ipSrc);
+                    tcp_con = sr_nat_insert_tcp_con(nat_lookup, ip_packet->ip_src);
                   }
                   tcp_con->last_updated = time(NULL);
 
@@ -250,13 +250,13 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     /* Receive SYN packet from client, respond..*/
                     /*---SYNACK*/
                     case SYN_SENT:
-                      if ((ntohl(tcp_hdr->ack) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
+                      if ((ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
                         /*tcp_con->server_isn = ntohl(tcp_hdr->seq);*/
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                       
                       /* Simultaneous open */
-                      } else if (ntohl(tcp_hdr->ack) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
+                      } else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                     }
@@ -269,15 +269,17 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   pthread_mutex_unlock(&((sr->nat).lock));
                   /* End of critical section. */
 
-                  ipHdr->ip_dst = nat_lookup->ip_int;
+                  ip_packet->ip_dst = nat_lookup->ip_int;
                   tcp_hdr->dst_port = htons(nat_lookup->aux_int);
 
                   /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
                   tcp_hdr->sum = tcp_cksum(ipHdr, tcp_hdr, len);*/
-                  tcp_hdr->icmp_sum = 0;
-                  tcp_hdr->icmp_sum = cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+                  tcp_hdr->checksum = 0;
+                  tcp_hdr->checksum = cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
 
-                
+                }else{
+                    printf("No matching nat entry found in table.. shit\n");
+                }
             }else{
                 printf("This is a UDP or other types of pakcet.. drop it.. \n");
                 return 0;
@@ -405,7 +407,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src, tcp_hdr->src_port, nat_mapping_tcp);
 
-            if (nat_lookup == NULL) {
+            if (nat_entry == NULL) {
               nat_entry  = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, tcp_hdr->src_port, nat_mapping_tcp);
               /* Add external ip(eth2) and port to mapping entry */
                 nat_entry->ip_ext = forward_src_iface->ip;
@@ -430,7 +432,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             switch (tcp_con->tcp_state) {
               case CLOSED:
                 /*1）---SYN----*/
-                if (ntohl(tcp_hdr->ack) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
+                if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
                   /*tcp_con->client_isn = ntohl(tcp_hdr->seq_num);*/
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = SYN_SENT;
@@ -438,7 +440,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 break;
               /* 3) ACK*/  
               case SYN_RCVD:
-                if (/*ntohl(tcp_hdr->seq_num) == tcp_con->client_isn + 1 && */ntohl(tcp_hdr->ack) == ntohl(tcp_con->server_isn) + 1 && !tcp_hdr->syn && tcp_hdr->ack) {
+                if (/*ntohl(tcp_hdr->seq_num) == tcp_con->client_isn + 1 && */ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1 && !tcp_hdr->syn && tcp_hdr->ack) {
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
                 }
@@ -462,8 +464,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             tcp_hdr->src_port = nat_lookup->aux_ext;
 
             /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));*/
-            tcp_hdr->icmp_sum = 0;
-            tcp_hdr->icmp_sum = cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+            tcp_hdr->checksum = 0;
+            tcp_hdr->checksum= cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
             
         }
         

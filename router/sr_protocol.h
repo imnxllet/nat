@@ -91,7 +91,7 @@ struct sr_tcp_hdr {
   uint16_t src_port;
   uint16_t dst_port;
   uint32_t seq;
-  uint32_t ack;
+  uint32_t ack_num;
   uint8_t  data_offset;  /*4 bits*/
   #if __BYTE_ORDER == __LITTLE_ENDIAN
     unsigned int fin:1;
