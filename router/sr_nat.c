@@ -212,11 +212,11 @@ void check_tcp_conns(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping) {
     /* print_tcp_state(currConn->tcp_state); */
 
     if (currConn->tcp_state == ESTABLISHED) {
-      if (difftime(curtime, currConn->last_updated) > nat->tcp_estb_timeout) {
+      if (difftime(curtime, currConn->last_updated) > nat->tcp_idle_timeout) {
         destroy_tcp_conn(nat_mapping, currConn);
       }
     } else {
-      if (difftime(curtime, currConn->last_updated) > nat->tcp_trns_timeout) {
+      if (difftime(curtime, currConn->last_updated) > nat->transitory_idle_timeout) {
         destroy_tcp_conn(nat_mapping, currConn);
       }
     }
@@ -256,9 +256,9 @@ void destroy_nat_mapping(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping)
     }
 
     if (nat_mapping->type == nat_mapping_icmp) { /* ICMP */
-      nat->available_icmp_identifiers[nat_mapping->aux_ext] = 0;
+      nat->ports[nat_mapping->aux_ext] = 0;
     } else if (nat_mapping->type == nat_mapping_tcp) { /* TCP */
-      nat->available_ports[nat_mapping->aux_ext] = 0;
+      nat->ports[nat_mapping->aux_ext] = 0;
     }
 
     struct sr_nat_connection *currConn, *nextConn;
