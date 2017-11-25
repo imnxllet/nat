@@ -422,10 +422,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             pthread_mutex_lock(&((sr->nat).lock));
 
             /* Look up tcp connection for this mapping */
-            struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_lookup, ip_packet->ip_dst);
+            struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_entry, ip_packet->ip_dst);
             if (tcp_con == NULL) {
                 /* Insert the connection .. */
-                tcp_con = sr_nat_insert_tcp_con(nat_lookup, ip_packet->ip_dst);
+                tcp_con = sr_nat_insert_tcp_con(nat_entry, ip_packet->ip_dst);
             }
             tcp_con->last_updated = time(NULL);
 
@@ -672,7 +672,8 @@ int sr_handleARPpacket(struct sr_instance* sr,
 
     }else if(arp_packet->ar_op == htons(arp_op_reply)){
         printf("This is an ARP reply...\n"); 
-        print_hdrs(arp_packet, len);
+        
+        /*print_hdrs(arp_packet, len);*/
 
         /* cache it */
         printf("Caching the ip->mac entry \n");
