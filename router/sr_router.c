@@ -292,7 +292,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             if(matching_entry != NULL){
                 printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
                 /* Locate the icmp header.. */
-                sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+                /*sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 
                 /* Adjust TTL and checksum */
                 ip_packet->ip_ttl --;
@@ -461,7 +461,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* End of critical section. */
 
             ip_packet->ip_src = nat_entry->ip_ext;
-            tcp_hdr->src_port = nat_lookup->aux_ext;
+            tcp_hdr->src_port = nat_entry->aux_ext;
 
             /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));*/
             tcp_hdr->checksum = 0;
@@ -477,7 +477,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         if(matching_entry != NULL){
             printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
                 /* Locate the icmp header.. */
-                sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+                /*sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 
                 /* Adjust TTL and checksum */
                 ip_packet->ip_ttl --;
