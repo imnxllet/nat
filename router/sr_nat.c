@@ -168,3 +168,107 @@ int generate_unique_port(struct sr_nat *nat) {
   pthread_mutex_unlock(&(nat->lock));
   return -1;
 }
+
+/* Get the connection associated with the given IP in the NAT entry. */
+struct sr_nat_connection *sr_nat_lookup_tcp_con(struct sr_nat_mapping *mapping, uint32_t ip_con) {
+  struct sr_nat_connection *currConn = mapping->conns;
+
+  while (currConn != NULL) {
+    if (currConn->ip == ip_con) {
+      return currConn;
+    }
+    currConn = currConn->next;
+  }
+
+  return NULL;
+}
+
+/* Insert a new connection associated with the given IP in the NAT entry. */
+struct sr_nat_connection *sr_nat_insert_tcp_con(struct sr_nat_mapping *mapping, uint32_t ip_con) {
+  struct sr_nat_connection *newConn = malloc(sizeof(struct sr_nat_connection));
+  assert(newConn != NULL);
+  memset(newConn, 0, sizeof(struct sr_nat_connection));
+
+  newConn->last_updated = time(NULL);
+  newConn->ip = ip_con;
+  newConn->tcp_state = CLOSED;
+
+  struct sr_nat_connection *currConn = mapping->conns;
+
+  mapping->conns = newConn;
+  newConn->next = currConn;
+
+  return newConn;
+}
+
+void check_tcp_conns(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping) {
+  struct sr_nat_connection *currConn, *nextConn;
+  time_t curtime = time(NULL);
+
+  currConn = nat_mapping->conns;
+
+  while (currConn != NULL) {
+    nextConn = currConn->next;
+    /* print_tcp_state(currConn->tcp_state); */
+
+    if (currConn->tcp_state == ESTABLISHED) {
+      if (difftime(curtime, currConn->last_updated) > nat->tcp_estb_timeout) {
+        destroy_tcp_conn(nat_mapping, currConn);
+      }
+    } else {
+      if (difftime(curtime, currConn->last_updated) > nat->tcp_trns_timeout) {
+        destroy_tcp_conn(nat_mapping, currConn);
+      }
+    }
+
+    currConn = nextConn;
+  }
+}
+
+void destroy_tcp_conn(struct sr_nat_mapping *mapping, struct sr_nat_connection *conn) {
+  printf("[REMOVE] TCP connection\n");
+  struct sr_nat_connection *prevConn = mapping->conns;
+
+  if (prevConn != NULL) {
+    if (prevConn == conn) {
+      mapping->conns = conn->next;
+    } else {
+      for (; prevConn->next != NULL && prevConn->next != conn; prevConn = prevConn->next) {}
+        if (prevConn == NULL) { return; }
+      prevConn->next = conn->next;
+    }
+    free(conn);
+  }
+}
+
+void destroy_nat_mapping(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping) {
+  printf("[REMOVE] nat mapping\n");
+
+  struct sr_nat_mapping *prevMapping = nat->mappings;
+
+  if (prevMapping != NULL) {
+    if (prevMapping == nat_mapping) {
+      nat->mappings = nat_mapping->next;
+    } else {
+      for (; prevMapping->next != NULL && prevMapping->next != nat_mapping; prevMapping = prevMapping->next) {}
+        if (prevMapping == NULL) {return;}
+      prevMapping->next = nat_mapping->next;
+    }
+
+    if (nat_mapping->type == nat_mapping_icmp) { /* ICMP */
+      nat->available_icmp_identifiers[nat_mapping->aux_ext] = 0;
+    } else if (nat_mapping->type == nat_mapping_tcp) { /* TCP */
+      nat->available_ports[nat_mapping->aux_ext] = 0;
+    }
+
+    struct sr_nat_connection *currConn, *nextConn;
+    currConn = nat_mapping->conns;
+
+    while (currConn != NULL) {
+      nextConn = currConn->next;
+      free(currConn);
+      currConn = nextConn;
+    }
+    free(nat_mapping);
+  }
+}

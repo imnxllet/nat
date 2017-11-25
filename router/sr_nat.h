@@ -18,9 +18,28 @@ typedef enum {
 
 struct sr_nat_connection {
   /* add TCP connection state data members here */
+  uint32_t ip;
+  uint32_t client_isn;
+  uint32_t server_isn;
+  time_t last_updated;
+  sr_tcp_state tcp_state;
 
   struct sr_nat_connection *next;
 };
+
+typedef enum {
+  CLOSE_WAIT,
+  CLOSED,
+  CLOSING,
+  ESTABLISHED,
+  FIN_WAIT_1,
+  FIN_WAIT_2,
+  LAST_ACK,
+  LISTEN,
+  SYN_RCVD,
+  SYN_SENT,
+  TIME_WAIT
+} sr_tcp_state;
 
 struct sr_nat_mapping {
   sr_nat_mapping_type type;
@@ -74,6 +93,12 @@ struct sr_nat_mapping *sr_nat_lookup_internal(struct sr_nat *nat,
    You must free the returned structure if it is not NULL. */
 struct sr_nat_mapping *sr_nat_insert_mapping(struct sr_nat *nat,
   uint32_t ip_int, uint16_t aux_int, sr_nat_mapping_type type );
+
+struct sr_nat_connection *sr_nat_lookup_tcp_con(struct sr_nat_mapping *mapping, uint32_t ip_con);
+struct sr_nat_connection *sr_nat_insert_tcp_con(struct sr_nat_mapping *mapping, uint32_t ip_con);
+void check_tcp_conns(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping);
+void destroy_tcp_conn(struct sr_nat_mapping *mapping, struct sr_nat_connection *conn);
+void destroy_nat_mapping(struct sr_nat *nat, struct sr_nat_mapping *nat_mapping);
 
 
 #endif

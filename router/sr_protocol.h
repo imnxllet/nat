@@ -87,6 +87,39 @@ struct sr_icmp_hdr {
 } __attribute__ ((packed)) ;
 typedef struct sr_icmp_hdr sr_icmp_hdr_t;
 
+struct sr_tcp_hdr {
+  uint16_t src_port;
+  uint16_t dst_port;
+  uint32_t seq;
+  uint32_t ack;
+  uint8_t  data_offset;  // 4 bits
+  #if __BYTE_ORDER == __LITTLE_ENDIAN
+    unsigned int fin:1;
+    unsigned int syn:1;
+    unsigned int rst:1;
+    unsigned int psh:1;
+
+    unsigned int ack:1;
+    unsigned int urg:1;
+    unsigned int ece:1;
+    unsigned int cwr:1;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    unsigned int cwr:1;
+    unsigned int ece:1;
+    unsigned int urg:1;
+    unsigned int ack:1;
+
+    unsigned int psh:1;
+    unsigned int rst:1;
+    unsigned int syn:1;
+    unsigned int fin:1;
+#endif
+  uint16_t window_size;
+  uint16_t checksum;
+  uint16_t urgent_p;
+} __attribute__ ((packed)) ;
+typedef struct sr_icmp_hdr sr_tcp_hdr_t;
+
 
 /* Structure of a type3 ICMP header
  */
