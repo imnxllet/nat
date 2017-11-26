@@ -332,8 +332,9 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             }
             /* Check if Routing Table has entry for targeted ip addr */
             /* use lpm */
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
-    
+
+            /*struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);*/
+           struct sr_rt* matching_entry = sr_add_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");
             /* Found destination in routing table*/
             if(matching_entry != NULL){
                 printf("Prepare to forward the packet back..\n");
@@ -369,6 +370,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                     /* Adjust ethernet packet and forward to next-hop */
                     memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
+                    /*struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);*/
                     struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
                     memcpy(((sr_ethernet_hdr_t *)packet)->ether_shost, forward_src_iface->addr, ETHER_ADDR_LEN);
                     free(arpentry);
@@ -985,3 +987,54 @@ uint32_t icmp_cksum (sr_icmp_t3_hdr_t *icmpHdr, int len) {
 
     return calcChksum;
 }
+
+
+
+struct sr_rt* sr_add_rt_entry(struct sr_instance* sr, char* dest,
+char* gw, char* mask,char* if_name)
+{
+    struct sr_rt* rt_walker = 0;
+    struct in_addr dest_addr;
+    struct in_addr gw_addr;
+    struct in_addr mask_addr;
+
+    /* -- REQUIRES -- */
+    assert(if_name);
+    assert(sr);
+
+    if(inet_aton(dest,&dest_addr) == 0)
+    { 
+        fprintf(stderr,
+                "Error loading routing table, cannot convert %s to valid IP\n",
+                dest);
+        return -1; 
+    }
+    if(inet_aton(gw,&gw_addr) == 0)
+    { 
+        fprintf(stderr,
+                "Error loading routing table, cannot convert %s to valid IP\n",
+                gw);
+        return -1; 
+    }
+    if(inet_aton(mask,&mask_addr) == 0)
+    { 
+        fprintf(stderr,
+                "Error loading routing table, cannot convert %s to valid IP\n",
+                mask);
+        return -1; 
+    }
+
+
+
+
+    rt_walker = (struct sr_rt*)malloc(sizeof(struct sr_rt));
+  
+    rt_walker->next = 0;
+    rt_walker->dest = dest;
+    rt_walker->gw   = gw;
+    rt_walker->mask = mask;
+    strncpy(rt_walker->interface,if_name,sr_IFACE_NAMELEN);
+
+    return rt_walker;
+
+} 

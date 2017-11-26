@@ -86,5 +86,7 @@ void sr_add_interface(struct sr_instance* , const char* );
 void sr_set_ether_ip(struct sr_instance* , uint32_t );
 void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
+struct sr_rt* sr_add_rt_entry(struct sr_instance* sr, char* dest,
+char* gw, char* mask,char* if_name);
 
 #endif /* SR_ROUTER_H */
