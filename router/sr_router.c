@@ -1006,21 +1006,21 @@ struct sr_rt* sr_rt_entry(struct sr_instance* sr, char* dest, char* gw, char* ma
         fprintf(stderr,
                 "Error loading routing table, cannot convert %s to valid IP\n",
                 dest);
-        return -1; 
+        return NULL; 
     }
     if(inet_aton(gw,&gw_addr) == 0)
     { 
         fprintf(stderr,
                 "Error loading routing table, cannot convert %s to valid IP\n",
                 gw);
-        return -1; 
+        return NULL; 
     }
     if(inet_aton(mask,&mask_addr) == 0)
     { 
         fprintf(stderr,
                 "Error loading routing table, cannot convert %s to valid IP\n",
                 mask);
-        return -1; 
+        return NULL; 
     }
 
 
@@ -1029,9 +1029,9 @@ struct sr_rt* sr_rt_entry(struct sr_instance* sr, char* dest, char* gw, char* ma
     rt_walker = (struct sr_rt*)malloc(sizeof(struct sr_rt));
   
     rt_walker->next = 0;
-    rt_walker->dest = dest;
-    rt_walker->gw   = gw;
-    rt_walker->mask = mask;
+    rt_walker->dest = dest_addr;
+    rt_walker->gw   = gw_addr;
+    rt_walker->mask = mask_addr;
     strncpy(rt_walker->interface,if_name,sr_IFACE_NAMELEN);
 
     return rt_walker;
