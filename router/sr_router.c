@@ -279,7 +279,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   /* End of critical section. */
 
                   ip_packet->ip_dst = nat_lookup->ip_int;
-                  tcp_hdr->dst_port = htons(nat_lookup->aux_int);
+                  tcp_hdr->dst_port = nat_lookup->aux_int;
 
                   /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
                   tcp_hdr->sum = tcp_cksum(ipHdr, tcp_hdr, len);*/
@@ -449,7 +449,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
               case CLOSED:
                 /*1）---SYN----*/
                 if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
-                    printf("[NAT TCP: 1)SYN-Opening the handshake.]\n");
+                    printf("[NAT TCP: (1)SYN-Opening the handshake.]\n");
                   /*tcp_con->client_isn = ntohl(tcp_hdr->seq_num);*/
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = SYN_SENT;
