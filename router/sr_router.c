@@ -555,7 +555,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   tcp_con->tcp_state = CLOSED;
                 }else{
                     printf("[NAT TCP ESTABLISHED: HTTP\n");
-                    return -1;
+    
 
                 }
                 break;
