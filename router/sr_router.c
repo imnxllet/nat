@@ -333,8 +333,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Check if Routing Table has entry for targeted ip addr */
             /* use lpm */
 
-            /*struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);*/
-           struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+           /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
                 printf("Prepare to forward the packet back..\n");
@@ -950,9 +950,26 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type,
 
 }
 
+struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip) {
+
+    struct sr_rt *rt = sr->routing_table;
+  unsigned long int longestMatch = 0;
+  struct sr_rt *rtMatch = NULL;
+
+  while (rt != NULL) {
+     if (((unsigned long int) rt->mask.s_addr & (unsigned long int) ip) == (unsigned long int) rt->dest.s_addr) {
+        if ((rt->mask.s_addr) > longestMatch) {
+           longestMatch = rt->mask.s_addr;
+           rtMatch = rt;
+        }
+     }
+     rt = rt->next;
+  }
+  return rtMatch;
+}
 
 /* Find   in routing table */
-struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
+struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip){
 
     struct sr_rt *rtable = sr->routing_table;
     struct sr_rt *match = NULL;
