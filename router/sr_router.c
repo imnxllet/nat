@@ -310,7 +310,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                             }
                         }*/
 
-                      return -1;
+                      printf("[NAT TCP] SERVER->ROUNTER.. DEFAULT.. why \n");
+                      print_hdrs(packet, len);
 
                       break;
                   }
