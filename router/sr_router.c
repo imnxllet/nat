@@ -268,10 +268,34 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                         break;
+                      }else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                        if(ntohs(nat_lookup->aux_ext) >= 1024){
+
+                            printf("[NAT TCP] ICMP port unreachable\n");
+                            sleep(6);
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }else{
+                            printf("[NAT TCP] port < 1024, no need to drop...\n");
+                        }
+
                       }else{
                         printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
+                        
                       }
-                    default:
+                    default: 
+                        if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                            if(ntohs(nat_lookup->aux_ext) >= 1024){
+
+                                printf("[NAT TCP] ICMP port unreachable\n");
+                                sleep(6);
+                                return sendICMPmessage(sr, 3, 3, interface, packet);
+                            }else{
+                                printf("[NAT TCP] port < 1024, no need to drop...\n");
+
+                            }
+                        }
+
+
                       break;
                   }
 
