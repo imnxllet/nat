@@ -237,7 +237,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         if(ntohs(tcp_hdr->dst_port) >= 1024){
 
                             printf("[NAT TCP] ICMP port unreachable\n");
-                            sleep(6);
+                            Sleep(6);
                             return sendICMPmessage(sr, 3, 3, interface, packet);
                         }else{
                             printf("[NAT TCP] port < 1024, no need to drop...\n");
