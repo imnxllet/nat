@@ -172,7 +172,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("This packet is for me(Echo Req), Initialize ARP req..\n");
                 
                 struct sr_arpcache *cache = &(sr->cache);
-                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src, 1);
+                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
                 
                 if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
@@ -234,17 +234,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("[NAT TCP] Packet from SERVER to INTERNAL HOST\n");
                 sr_tcp_hdr_t *tcp_hdr = (sr_tcp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
                 
-                if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
-                        if(ntohs(tcp_hdr->dst_port) >= 1024){
 
-                            printf("[NAT TCP] ICMP port unreachable\n");
-                            sleep(6);
-                            return sendICMPmessage(sr, 3, 3, interface, packet);
-                        }else{
-                            printf("[NAT TCP] port < 1024, no need to drop...\n");
-                            return sendICMPmessage(sr, 3, 3, interface, packet);
-                        }
-                }
 
                 struct sr_nat_mapping *nat_lookup = sr_nat_lookup_external(&(sr->nat), tcp_hdr->dst_port, nat_mapping_tcp);
                 if (nat_lookup != NULL) {
@@ -261,6 +251,17 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     tcp_con = sr_nat_insert_tcp_con(nat_lookup, ip_packet->ip_src);
                   }else{
                     printf("[NAT TCP] Existing conn, start modify..\n");
+                    if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                        if(ntohs(tcp_hdr->dst_port) >= 1024){
+
+                            printf("[NAT TCP] ICMP port unreachable\n");
+                            sleep(6);
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }else{
+                            printf("[NAT TCP] port < 1024, no need to drop...\n");
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }
+                    }
                   }
                   tcp_con->last_updated = time(NULL);
 
@@ -336,6 +337,17 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 }else{
                     printf("No matching nat entry found in table.. shit\n");
+                    if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                        if(ntohs(tcp_hdr->dst_port) >= 1024){
+
+                            printf("[NAT TCP] ICMP port unreachable\n");
+                            sleep(6);
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }else{
+                            printf("[NAT TCP] port < 1024, no need to drop...\n");
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }
+                    }
                     return sendICMPmessage(sr, 3, 0, interface, packet);
 
                 }
@@ -346,7 +358,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Check if Routing Table has entry for targeted ip addr */
             /* use lpm */
 
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 1);
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
@@ -363,6 +375,9 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
+                in_addr gw;
+                inet_aton("10.0.1.100 ",&gw);
+                matching_entry->gw = gw;
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
      
 
@@ -407,7 +422,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             return sendICMPmessage(sr, 11, 0, interface, packet);
         }
         printf("[NAT] Packet from INTERNAL to SERVER\n");
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 0);
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
 
         if(matching_entry == NULL){/* No match in routing table */
           printf("Did not find target ip in rtable..\n");
@@ -654,7 +669,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
             printf("This packet is for me(Echo Req), Initialize ARP req..\n");
             
             struct sr_arpcache *cache = &(sr->cache);
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src, 0);
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
             struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
             
             if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
@@ -687,7 +702,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 0);
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
@@ -990,12 +1005,13 @@ struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip) {
 }
 
 /* Find   in routing table */
-struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip, int i){
+struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
 
     struct sr_rt *rtable = sr->routing_table;
     struct sr_rt *match = NULL;
     struct sr_rt *default_eth1 = NULL;
     unsigned long length = 0;
+
     while (rtable){
         /* Check which entry has the same ip addr as given one */
         if (((rtable->dest).s_addr & (rtable->mask).s_addr) == (ip & (rtable->mask).s_addr)){
@@ -1007,12 +1023,13 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip, int i){
         }
         if(strcmp(rtable->interface, "eth1") == 0){
             default_eth1 = rtable;
+           /* match = rtable;*/
         }
         rtable = rtable->next;
     }
     
     /* Check if we find a matching entry */
-    if(i == 1 || length == 0){
+    if(length == 0){
       
        return default_eth1;
       /*return NULL;*/
