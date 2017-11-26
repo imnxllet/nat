@@ -464,7 +464,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 /* Unsolicited syn... drop it..*/
                 }else if((ntohl(tcp_hdr->ack_num) == 0) && tcp_hdr->syn && !tcp_hdr->ack){
-                    printf("[NAT] Unsolicited SYN packet..\n");
+                    printf("[NAT] Unsolicited SYN packet.. \n");
                     double diff_t;
                     diff_t = difftime(time(NULL), tcp_con->last_updated );
                     if((int)diff_t < 6){
@@ -476,7 +476,6 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         return sendICMPmessage(sr, 3, 3, interface, packet);
                     }
 
-                }
                 }else{
                     printf("[NAT TCP: I am fucked up here!!!\n");
                     printf("(ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1): ->%d\n", (ntohl(tcp_hdr->seq) == ntohl(tcp_con->client_isn) + 1));
