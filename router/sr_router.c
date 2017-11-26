@@ -386,7 +386,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("eth2 ip is...\n");
                 print_addr_ip_int(forward_src_iface->ip);
                 /* Generate a random port for the entry for external info */
-                nat_entry->aux_ext = (uint16_t) generate_unique_port(&(sr->nat));
+                nat_entry->aux_ext = htons((uint16_t) generate_unique_port(&(sr->nat)));
             }else{
                 printf("[NAT icmp]Found a matching entry..\n");
             }
@@ -425,7 +425,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("eth2 ip is...\n");
                 print_addr_ip_int(ntohl(forward_src_iface->ip));
                 /* Generate a random port for the entry for external info */
-                nat_entry->aux_ext = (uint16_t) generate_unique_port(&(sr->nat));
+                nat_entry->aux_ext = htons((uint16_t) generate_unique_port(&(sr->nat)));
             }else{
                 printf("[NAT TCP: Found a entry]\n");
             }
