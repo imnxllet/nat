@@ -375,7 +375,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
-                in_addr gw;
+                struct in_addr gw;
                 inet_aton("10.0.1.100 ",&gw);
                 matching_entry->gw = gw;
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
