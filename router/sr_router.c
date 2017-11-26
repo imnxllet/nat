@@ -971,7 +971,7 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type,
 
 }
 
-struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip) {
+struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip) {
 
     struct sr_rt *rt = sr->routing_table;
   unsigned long int longestMatch = 0;
@@ -990,10 +990,11 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip) {
 }
 
 /* Find   in routing table */
-struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip){
+struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
 
     struct sr_rt *rtable = sr->routing_table;
     struct sr_rt *match = NULL;
+    struct sr_rt *default_eth1 = NULL;
     unsigned long length = 0;
     while (rtable){
         /* Check which entry has the same ip addr as given one */
@@ -1004,12 +1005,17 @@ struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip){
             match = rtable;
           }         
         }
+        if(strcmp(rtable->interface, "eth1") == 0){
+            default_eth1 = rtable;
+        }
         rtable = rtable->next;
     }
     
     /* Check if we find a matching entry */
     if(length == 0){
-      return NULL;
+      
+       return default_eth1;
+      /*return NULL;*/
     }
 
     return match;

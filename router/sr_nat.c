@@ -47,7 +47,8 @@ int sr_nat_destroy(struct sr_nat *nat) {  /* Destroys the nat (free memory) */
 }
 
 void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
-  struct sr_nat *nat = (struct sr_nat *)nat_ptr;
+  struct sr_nat *nat = (struct sr_nat *) nat_ptr;
+
   while (1) {
     sleep(1.0);
     pthread_mutex_lock(&(nat->lock));
@@ -55,11 +56,43 @@ void *sr_nat_timeout(void *nat_ptr) {  /* Periodic Timout handling */
     time_t curtime = time(NULL);
 
     /* handle periodic tasks here */
+    struct sr_nat_mapping *currMapping, *nextMapping;
+    currMapping = nat->mappings;
 
+    while (currMapping != NULL) {
+      nextMapping = currMapping->next;
+
+      if (currMapping->type == nat_mapping_icmp) { /* ICMP */
+        if (difftime(curtime, currMapping->last_updated) > nat->icmp_timeout_int) {
+          destroy_nat_mapping(nat, currMapping);
+        }
+      } else if (currMapping->type == nat_mapping_tcp) { /* TCP */
+        check_tcp_conns(nat, currMapping);
+        if (currMapping->conns == NULL && difftime(curtime, currMapping->last_updated) > 0.5) {
+          destroy_nat_mapping(nat, currMapping);
+        }
+      }
+      currMapping = nextMapping;
+    }
     pthread_mutex_unlock(&(nat->lock));
   }
   return NULL;
 }
+ /* Periodic Timout handling */
+/*void *sr_nat_timeout(void *nat_ptr) { 
+  struct sr_nat *nat = (struct sr_nat *)nat_ptr;
+  while (1) {
+    sleep(1.0);
+    pthread_mutex_lock(&(nat->lock));
+
+    time_t curtime = time(NULL);*/
+
+    /* handle periodic tasks here */
+
+   /* pthread_mutex_unlock(&(nat->lock));
+  }
+  return NULL;
+}*/
 
 /* Get the mapping associated with given external port.
    You must free the returned structure if it is not NULL. */
