@@ -297,6 +297,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         return -1;
                         
                       }
+                    case ESTABLISHED:
+                        printf("[NAT TCP] SERVER->ROUNTER.. ESTABLISHED.. http \n");
+                        break;
+
                     default: 
                         /*if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                             if(ntohs(nat_lookup->aux_ext) >= 1024){
@@ -549,7 +553,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = CLOSED;
                 }else{
-                    printf("[NAT TCP ESTABLISHED: I am fucked up here!!!\n");
+                    printf("[NAT TCP ESTABLISHED: HTTP\n");
                     return -1;
 
                 }
