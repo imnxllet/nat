@@ -232,6 +232,18 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             }else if(ip_proto == 0x0006){
                 printf("[NAT TCP] Packet from SERVER to INTERNAL HOST\n");
                 sr_tcp_hdr_t *tcp_hdr = (sr_tcp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+                
+                if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                        if(ntohs(tcp_hdr->dst_port) >= 1024){
+
+                            printf("[NAT TCP] ICMP port unreachable\n");
+                            sleep(6);
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }else{
+                            printf("[NAT TCP] port < 1024, no need to drop...\n");
+                            return sendICMPmessage(sr, 3, 3, interface, packet);
+                        }
+                }
 
                 struct sr_nat_mapping *nat_lookup = sr_nat_lookup_external(&(sr->nat), tcp_hdr->dst_port, nat_mapping_tcp);
                 if (nat_lookup != NULL) {
@@ -251,6 +263,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   }
                   tcp_con->last_updated = time(NULL);
 
+
                   switch (tcp_con->tcp_state) {
                     /* Receive SYN packet from client, respond..*/
                     /*--2)SYN-ACK*/
@@ -268,7 +281,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                         break;
-                      }else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                      /*}else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                         if(ntohs(nat_lookup->aux_ext) >= 1024){
 
                             printf("[NAT TCP] ICMP port unreachable\n");
@@ -276,14 +289,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                             return sendICMPmessage(sr, 3, 3, interface, packet);
                         }else{
                             printf("[NAT TCP] port < 1024, no need to drop...\n");
-                        }
+                        }*/
 
                       }else{
                         printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
                         
                       }
                     default: 
-                        if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
+                        /*if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                             if(ntohs(nat_lookup->aux_ext) >= 1024){
 
                                 printf("[NAT TCP] ICMP port unreachable\n");
@@ -293,7 +306,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                                 printf("[NAT TCP] port < 1024, no need to drop...\n");
 
                             }
-                        }
+                        }*/
 
 
                       break;
@@ -439,6 +452,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             sr_tcp_hdr_t *tcp_hdr = (sr_tcp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
+            if(ntohs(tcp_hdr->dst_port) == 22){
+                return sendICMPmessage(sr, 3, 3, interface, packet);
+            }
+
             struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src, tcp_hdr->src_port, nat_mapping_tcp);
 
             if (nat_entry == NULL) {
@@ -485,6 +502,12 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
+                }else if ((ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
+                        /*tcp_con->server_isn = ntohl(tcp_hdr->seq);*/
+                        printf("[NAT TCP] 2-SYN-ACK : Simultaneous open \n");
+                        tcp_con->client_isn = tcp_hdr->seq;
+                  tcp_con->tcp_state = ESTABLISHED;
+                        break;
 
                 /* Unsolicited syn... drop it..*/
                 }else if((ntohl(tcp_hdr->ack_num) == 0) && tcp_hdr->syn && !tcp_hdr->ack){
