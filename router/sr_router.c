@@ -512,9 +512,9 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   tcp_con->tcp_state = ESTABLISHED;
                 }else if ((ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
                         /*tcp_con->server_isn = ntohl(tcp_hdr->seq);*/
-                        printf("[NAT TCP] 2-SYN-ACK : Simultaneous open \n");
+                        printf("[NAT TCP] INTERNAL->SERVER>. 2-SYN-ACK : Simultaneous open \n");
                         tcp_con->client_isn = tcp_hdr->seq;
-                  tcp_con->tcp_state = ESTABLISHED;
+                        tcp_con->tcp_state = ESTABLISHED;
                         break;
 
                 /* Unsolicited syn... drop it..*/
@@ -549,6 +549,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 break;
 
               default:
+              printf("[NAT TCP] INTERNAL -> SERVER: DEFAULT...\n");
+              print_hdrs(packet, len);
                 break;
             }
 
