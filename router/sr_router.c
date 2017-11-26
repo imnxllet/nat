@@ -172,7 +172,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 printf("This packet is for me(Echo Req), Initialize ARP req..\n");
                 
                 struct sr_arpcache *cache = &(sr->cache);
-                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
+                struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src, 1);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
                 
                 if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
@@ -346,7 +346,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Check if Routing Table has entry for targeted ip addr */
             /* use lpm */
 
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 1);
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
@@ -407,7 +407,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             return sendICMPmessage(sr, 11, 0, interface, packet);
         }
         printf("[NAT] Packet from INTERNAL to SERVER\n");
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 0);
 
         if(matching_entry == NULL){/* No match in routing table */
           printf("Did not find target ip in rtable..\n");
@@ -654,7 +654,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
             printf("This packet is for me(Echo Req), Initialize ARP req..\n");
             
             struct sr_arpcache *cache = &(sr->cache);
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src, 0);
             struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
             
             if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
@@ -687,7 +687,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst, 0);
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
@@ -990,7 +990,7 @@ struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip) {
 }
 
 /* Find   in routing table */
-struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
+struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip, int i){
 
     struct sr_rt *rtable = sr->routing_table;
     struct sr_rt *match = NULL;
@@ -1012,7 +1012,7 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
     }
     
     /* Check if we find a matching entry */
-    if(length == 0){
+    if(i == 1 || length == 0){
       
        return default_eth1;
       /*return NULL;*/
