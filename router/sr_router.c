@@ -294,6 +294,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                       }else{
                         printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
+                        tcp_con->tcp_state = CLOSED;
                         return -1;
                         
                       }
