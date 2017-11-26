@@ -503,6 +503,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   /*tcp_con->client_isn = ntohl(tcp_hdr->seq_num);*/
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = SYN_SENT;
+                }else{
+                    printf("[NAT TCP CLOSED: fuck up]\n");
                 }
                 break;
               /* 3) ACK*/  
@@ -546,6 +548,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     printf("[NAT TCP: Client to Server: closing connection]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = CLOSED;
+                }else{
+                    printf("[NAT TCP ESTABLISHED: I am fucked up here!!!\n");
+                    return -1;
+
                 }
                 break;
 
