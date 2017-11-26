@@ -294,8 +294,9 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                       }else{
                         printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
-                        tcp_con->tcp_state = CLOSED;
-                        return -1;
+                        /*tcp_con->tcp_state = CLOSED;
+                        return -1;*/
+                        return sendICMPmessage(sr, 3, 3, interface, packet);
                         
                       }
                     case ESTABLISHED:
@@ -317,7 +318,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                       printf("[NAT TCP] SERVER->ROUNTER.. DEFAULT.. why \n");
                       print_hdrs(packet, len);
-                      return sendICMPmessage(sr, 3, 3, interface, packet);
+                     /* return sendICMPmessage(sr, 3, 3, interface, packet);*/
 
                       break;
                   }
