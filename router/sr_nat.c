@@ -161,7 +161,7 @@ int generate_unique_port(struct sr_nat *nat) {
       printf("Allocated port: %d\n", i);
 
       pthread_mutex_unlock(&(nat->lock));
-      return i*1000;
+      return i*1000000;
     }
   }
 
