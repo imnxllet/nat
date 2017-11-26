@@ -224,7 +224,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 }else{
                     printf("[NAT ICMP] didn't found entry..shit\n");
-                    return 0;
+                    return sendICMPmessage(sr, 3, 0, interface, packet);
                 }
                 
 
@@ -293,6 +293,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                       }else{
                         printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
+                        return -1;
                         
                       }
                     default: 
@@ -308,6 +309,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                             }
                         }*/
 
+                      return -1;
 
                       break;
                   }
@@ -325,6 +327,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 }else{
                     printf("No matching nat entry found in table.. shit\n");
+                    return sendICMPmessage(sr, 3, 0, interface, packet);
+
                 }
             }else{
                 printf("This is a UDP or other types of pakcet.. drop it.. \n");
