@@ -447,7 +447,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
               case CLOSED:
                 /*1）---SYN----*/
                 if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
-                    printf("[NAT TCP: 2)SYN-Opening the handshake.]\n");
+                    printf("[NAT TCP: 1)SYN-Opening the handshake.]\n");
                   /*tcp_con->client_isn = ntohl(tcp_hdr->seq_num);*/
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = SYN_SENT;
@@ -455,12 +455,16 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 break;
               /* 3) ACK*/  
               case SYN_RCVD:
-                if (/*ntohl(tcp_hdr->seq_num) == tcp_con->client_isn + 1 && */ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1 && !tcp_hdr->syn && tcp_hdr->ack) {
+                if ((ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1) && (ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1) && !tcp_hdr->syn && tcp_hdr->ack) {
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
                 }else{
                     printf("[NAT TCP: I am fucked up here!!!\n");
+                    printf("(ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1): ->%d\n", (ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1));
+                    printf("(ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1): ->%d\n", (ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1));
+                    printf("!tcp_hdr->syn: ->%d\n", !tcp_hdr->syn);
+                    printf("tcp_hdr->ack: ->%d\n", tcp_hdr->ack);
                 }
                 break;
 
