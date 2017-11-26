@@ -334,7 +334,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* use lpm */
 
             /*struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);*/
-           struct sr_rt* matching_entry = sr_add_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");
+           struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");
             /* Found destination in routing table*/
             if(matching_entry != NULL){
                 printf("Prepare to forward the packet back..\n");
@@ -990,8 +990,7 @@ uint32_t icmp_cksum (sr_icmp_t3_hdr_t *icmpHdr, int len) {
 
 
 
-struct sr_rt* sr_add_rt_entry(struct sr_instance* sr, char* dest,
-char* gw, char* mask,char* if_name)
+struct sr_rt* sr_rt_entry(struct sr_instance* sr, char* dest, char* gw, char* mask,char* if_name)
 {
     struct sr_rt* rt_walker = 0;
     struct in_addr dest_addr;
