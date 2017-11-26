@@ -459,6 +459,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
+                }else{
+                    printf("[NAT TCP: I am fucked up here!!!\n");
                 }
                 break;
 
