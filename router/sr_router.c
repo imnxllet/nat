@@ -260,15 +260,17 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         printf("[NAT TCP] 2-SYN-ACK \n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
+                        break;
                       
                       /* Simultaneous open */
                       } else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
                         printf("[NAT TCP] 2-SYN-ACK : Simultaneous Open\n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
-                    }
-                    break;
-                  
+                        break;
+                      }else{
+                        printf("[NAT TCP] 2-SYN-ACK:fucked up;; \n");
+                      }
                     default:
                       break;
                   }
@@ -459,6 +461,22 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
+
+                /* Unsolicited syn... drop it..*/
+                }else if((ntohl(tcp_hdr->ack_num) == 0) && tcp_hdr->syn && !tcp_hdr->ack){
+                    printf("[NAT] Unsolicited SYN packet..\n");
+                    double diff_t;
+                    diff_t = difftime(time(NULL), tcp_con->last_updated );
+                    if((int)diff_t < 6){
+                        printf("[NAT] Unsolicited SYN packet.. drop it.. <6\n");
+                        return -1;
+
+                    }else{
+                        printf("[NAT] Unsolicited SYN packet.. drop it anyways....\n");
+                        return -1;
+                    }
+
+                }
                 }else{
                     printf("[NAT TCP: I am fucked up here!!!\n");
                     printf("(ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1): ->%d\n", (ntohl(tcp_hdr->seq) == ntohl(tcp_con->client_isn) + 1));
