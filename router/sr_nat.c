@@ -148,7 +148,7 @@ int is_nat_external_iface(char *iface) {
 }
 
 /* Generate a port for external mapping */
-uint16_t generate_unique_port(struct sr_nat *nat) {
+int generate_unique_port(struct sr_nat *nat) {
 
   pthread_mutex_lock(&(nat->lock));
 
@@ -161,7 +161,7 @@ uint16_t generate_unique_port(struct sr_nat *nat) {
       printf("Allocated port: %d\n", i);
 
       pthread_mutex_unlock(&(nat->lock));
-      return htonl(i);
+      return i*1000;
     }
   }
 
