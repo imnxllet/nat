@@ -196,10 +196,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         /* Packet comes from server1/2 to router.... translate NAT addr to internal ..*/
         /* check type of IP: icmp, tcp????*/
         }else{
-            printf("Packet from external... Should update its dest addr to internal..\n");
+            printf("[NAT] Packet targeted INternal HOST from server\n");
 
             if (ip_proto == ip_protocol_icmp) { 
-                printf("Doing NAT for icmp that is targeting external host...\n");
+                printf("[NAT ICMP] \n");
 
                 /* Locate icmp header.. */
                 sr_icmp_t3_hdr_t *icmp_hdr = (sr_icmp_t3_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
@@ -209,7 +209,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 /* No mapping found.. */
                 if (nat_entry != NULL) {
-                    printf("found entry..\n");
+                    printf("[NAT ICMP: found mapping in table, good] \n");
                     ip_packet->ip_dst = nat_entry->ip_int;
                     /*int diff = (int)icmp_hdr->identifier - (int)nat_entry->aux_int;*/
                     icmp_hdr->identifier = nat_entry->aux_int;
@@ -223,18 +223,20 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                     /*icmp_hdr->icmp_sum = (uint16_t) ((int) icmp_hdr->icmp_sum - diff);*/
 
                 }else{
-                    printf("didn;t found entry..shit\n");
+                    printf("[NAT ICMP] didn't found entry..shit\n");
                     return 0;
                 }
                 
 
             /* TCP */
             }else if(ip_proto == 0x0006){
-                printf("Doing NAT for tcp that is going to router from server.....\n");
+                printf("[NAT TCP] Packet from SERVER to INTERNAL HOST\n");
                 sr_tcp_hdr_t *tcp_hdr = (sr_tcp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
                 struct sr_nat_mapping *nat_lookup = sr_nat_lookup_external(&(sr->nat), tcp_hdr->dst_port, nat_mapping_tcp);
                 if (nat_lookup != NULL) {
+                    printf("[NAT TCP] Found mapping in table, good.\n");
+
                   nat_lookup->last_updated = time(NULL);
 
                   /* Critical section, make sure you lock, careful modifying code under critical section. */
@@ -242,21 +244,26 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                   struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_lookup, ip_packet->ip_src);
                   if (tcp_con == NULL) {
+                    printf("[NAT TCP] New conn, inserting..\n");
                     tcp_con = sr_nat_insert_tcp_con(nat_lookup, ip_packet->ip_src);
+                  }else{
+                    printf("[NAT TCP] Existing conn, start modify..\n");
                   }
                   tcp_con->last_updated = time(NULL);
 
                   switch (tcp_con->tcp_state) {
                     /* Receive SYN packet from client, respond..*/
-                    /*---SYNACK*/
+                    /*--2)SYN-ACK*/
                     case SYN_SENT:
                       if ((ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
                         /*tcp_con->server_isn = ntohl(tcp_hdr->seq);*/
+                        printf("[NAT TCP] 2-SYN-ACK \n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                       
                       /* Simultaneous open */
                       } else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
+                        printf("[NAT TCP] 2-SYN-ACK : Simultaneous Open\n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                     }
@@ -290,7 +297,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
     
             /* Found destination in routing table*/
             if(matching_entry != NULL){
-                printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
+                printf("Prepare to forward the packet back..\n");
+                printf("Found entry in routing table.\n");
                 /* Locate the icmp header.. */
                 /*sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 
@@ -299,7 +307,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 ip_packet->ip_sum = 0;
                 ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
                 
-                printf("Found entry in routing table.\n");
+                
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
@@ -344,7 +352,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             /* Check arp cache before send back...*/
             return sendICMPmessage(sr, 11, 0, interface, packet);
         }
-        printf("This packet is not for router...should be forwarded..\n");
+        printf("[NAT] Packet from INTERNAL to SERVER\n");
         struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
 
         if(matching_entry == NULL){/* No match in routing table */
@@ -357,7 +365,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         /* ICMP*/
         struct sr_if* forward_src_iface = sr_get_interface(sr, matching_entry->interface);
         if (ip_proto == ip_protocol_icmp) { 
-            printf("Doing NAT for icmp that is targeting external host...\n");
+            printf("[NAT icmp]\n");
 
             /* Locate icmp header.. */
             sr_icmp_t3_hdr_t *icmp_hdr = (sr_icmp_t3_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
@@ -367,7 +375,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             /* No mapping found.. */
             if (nat_entry == NULL) {
-                printf("No mapping entry found, makeing one...\n");
+                printf("[NAT ICMP] making entry\n");
                 /* Insert mapping entry with internal source ip and icmp id */
                 nat_entry = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, icmp_hdr->identifier, nat_mapping_icmp);
 
@@ -378,7 +386,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 /* Generate a random port for the entry for external info */
                 nat_entry->aux_ext = (uint16_t) generate_unique_port(&(sr->nat));
             }else{
-                printf("Found a matching entry..\n");
+                printf("[NAT icmp]Found a matching entry..\n");
             }
             /* Update this entry */
             nat_entry->last_updated = time(NULL);
@@ -388,8 +396,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             ip_packet->ip_src = nat_entry->ip_ext;
             printf("eth2 ip is...\n");
             print_addr_ip_int(ntohl(ip_packet->ip_src));
-            printf("After NAT... headers like this\n");
-            print_hdrs(packet,len);
+            /*printf("After NAT... headers like this\n");
+            print_hdrs(packet,len);*/
             icmp_hdr->icmp_sum = 0;
             icmp_hdr->icmp_sum = cksum(icmp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
 
@@ -401,13 +409,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
         /* TCP */
         }else if(ip_proto == 0x0006){
-            printf("Doing NAT for tcp that is targeting external host...\n");
+            printf("[NAT TCP: from internal to server]\n");
 
             sr_tcp_hdr_t *tcp_hdr = (sr_tcp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
             struct sr_nat_mapping *nat_entry = sr_nat_lookup_internal(&(sr->nat), ip_packet->ip_src, tcp_hdr->src_port, nat_mapping_tcp);
 
             if (nat_entry == NULL) {
+                printf("[NAT TCP: Didn't find mapping, make one]\n");
               nat_entry  = sr_nat_insert_mapping(&(sr->nat), ip_packet->ip_src, tcp_hdr->src_port, nat_mapping_tcp);
               /* Add external ip(eth2) and port to mapping entry */
                 nat_entry->ip_ext = forward_src_iface->ip;
@@ -415,6 +424,8 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 print_addr_ip_int(ntohl(forward_src_iface->ip));
                 /* Generate a random port for the entry for external info */
                 nat_entry->aux_ext = (uint16_t) generate_unique_port(&(sr->nat));
+            }else{
+                printf("[NAT TCP: Found a entry]\n");
             }
             nat_entry->last_updated = time(NULL);
 
@@ -425,7 +436,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
             struct sr_nat_connection *tcp_con = sr_nat_lookup_tcp_con(nat_entry, ip_packet->ip_dst);
             if (tcp_con == NULL) {
                 /* Insert the connection .. */
+                printf("[NAT TCP: NO conn found, insert this]\n");
                 tcp_con = sr_nat_insert_tcp_con(nat_entry, ip_packet->ip_dst);
+            }else{
+                printf("[NAT TCP: found Existing COnn]\n");
             }
             tcp_con->last_updated = time(NULL);
 
@@ -433,6 +447,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
               case CLOSED:
                 /*1）---SYN----*/
                 if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
+                    printf("[NAT TCP: 2)SYN-Opening the handshake.]\n");
                   /*tcp_con->client_isn = ntohl(tcp_hdr->seq_num);*/
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = SYN_SENT;
@@ -441,6 +456,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
               /* 3) ACK*/  
               case SYN_RCVD:
                 if (/*ntohl(tcp_hdr->seq_num) == tcp_con->client_isn + 1 && */ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1 && !tcp_hdr->syn && tcp_hdr->ack) {
+                  printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
                 }
@@ -448,6 +464,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
               case ESTABLISHED:
                 if (tcp_hdr->fin && tcp_hdr->ack) {
+                    printf("[NAT TCP: Client to Server: closing connection]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = CLOSED;
                 }
@@ -475,7 +492,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
-            printf("Packet to external host. This is a ICMP packet. Doing NAT..\n");
+            printf("[NAT] Forwarding the modified packet to destination\n");
                 /* Locate the icmp header.. */
                 /*sr_icmp_hdr_t *icmp_hdr = (sr_icmp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 
@@ -485,7 +502,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 ip_packet->ip_sum = cksum((uint8_t *) ip_packet, sizeof(sr_ip_hdr_t));
                 
                 
-                printf("Found entry in routing table.\n");
+                printf("[NAT}Found entry in routing table.\n");
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
@@ -493,7 +510,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
             /* Miss ARP */
             if (arpentry == NULL){
-                printf("Miss in ARP cache table..\n");
+                printf("[NAT}Miss in ARP cache table..\n");
                 /* Send ARP request for 5 times. 
                  If no response, send ICMP host Unreachable.*/
 
@@ -504,7 +521,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 return 0;
 
             }else{/* Hit */
-                printf("Hit in ARP cahce table...\n");
+                printf("[NAT]Hit in ARP cahce table...\n");
 
                 /* Adjust ethernet packet and forward to next-hop */
                 memcpy(((sr_ethernet_hdr_t *)packet)->ether_dhost, (uint8_t *) arpentry->mac, ETHER_ADDR_LEN);
