@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "sr_nat.h"
 #include "sr_if.h"
@@ -237,7 +238,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         if(ntohs(tcp_hdr->dst_port) >= 1024){
 
                             printf("[NAT TCP] ICMP port unreachable\n");
-                            Sleep(6);
+                            sleep(6);
                             return sendICMPmessage(sr, 3, 3, interface, packet);
                         }else{
                             printf("[NAT TCP] port < 1024, no need to drop...\n");
