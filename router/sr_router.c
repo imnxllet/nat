@@ -312,6 +312,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                       printf("[NAT TCP] SERVER->ROUNTER.. DEFAULT.. why \n");
                       print_hdrs(packet, len);
+                      return sendICMPmessage(sr, 3, 3, interface, packet);
 
                       break;
                   }
