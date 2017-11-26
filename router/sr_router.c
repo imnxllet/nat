@@ -455,7 +455,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 break;
               /* 3) ACK*/  
               case SYN_RCVD:
-                if ((ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1) && (ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1) && !tcp_hdr->syn && tcp_hdr->ack) {
+                if ((ntohl(tcp_hdr->seq) == ntohl(tcp_con->client_isn) + 1) && (ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->server_isn) + 1) && !tcp_hdr->syn && tcp_hdr->ack) {
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
