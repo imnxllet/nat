@@ -476,7 +476,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         return -1;
                     }
 
-                }
+                
                 }else{
                     printf("[NAT TCP: I am fucked up here!!!\n");
                     printf("(ntohl(tcp_hdr->seq_num) == ntohl(tcp_con->client_isn) + 1): ->%d\n", (ntohl(tcp_hdr->seq) == ntohl(tcp_con->client_isn) + 1));
