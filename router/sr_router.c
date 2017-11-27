@@ -375,8 +375,8 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
             /* Check if Routing Table has entry for targeted ip addr */
             /* use lpm */
 
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
-            struct sr_rt* longest_prefix_match_internal(sr, ip_packet->ip_dst);
+            /*struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);*/
+            struct sr_rt* matching_entry = longest_prefix_match_internal(sr, ip_packet->ip_dst);
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
