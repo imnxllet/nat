@@ -279,7 +279,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                       
                       /* Simultaneous open */
                       } else if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack) {
-                        printf("[NAT TCP] 2-SYN-ACK : Simultaneous Open\n");
+                        printf("[NAT TCP] 1)SYN SERVER->INTERNAL: Simultaneous Open\n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
                         break;
@@ -300,6 +300,12 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                         return sendICMPmessage(sr, 3, 3, interface, packet);
                         
                       }
+                    case SYN_RCVD:
+                        if (tcp_hdr->syn && tcp_hdr->ack) {
+                            printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
+                        
+                            tcp_con->tcp_state = ESTABLISHED;
+
                     case ESTABLISHED:
                         printf("[NAT TCP] SERVER->ROUNTER.. ESTABLISHED.. http \n");
                         break;
@@ -375,9 +381,9 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 
                 /* Check ARP cache, see hit or miss, like can we find the MAC addr.. */
                 struct sr_arpcache *cache = &(sr->cache);
-                struct in_addr gw;
+                /*struct in_addr gw;
                 inet_aton("10.0.1.100 ",&gw);
-                matching_entry->gw = gw;
+                matching_entry->gw = gw;*/
                 struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
      
 
@@ -534,12 +540,13 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   printf("[NAT TCP: 3)ACK-Client to server, ok to send, established]\n");
                   tcp_con->client_isn = tcp_hdr->seq;
                   tcp_con->tcp_state = ESTABLISHED;
-                }else if ((ntohl(tcp_hdr->ack_num) == ntohl(tcp_con->client_isn) + 1) && tcp_hdr->syn && tcp_hdr->ack) {
+                }else if (tcp_hdr->syn && tcp_hdr->ack) {
                         /*tcp_con->server_isn = ntohl(tcp_hdr->seq);*/
                         printf("[NAT TCP] INTERNAL->SERVER>. 2-SYN-ACK : Simultaneous open \n");
                         tcp_con->client_isn = tcp_hdr->seq;
-                        tcp_con->tcp_state = ESTABLISHED;
+                        tcp_con->tcp_state = SYN_RCVD;
                         break;
+
 
                 /* Unsolicited syn... drop it..*/
                 }else if((ntohl(tcp_hdr->ack_num) == 0) && tcp_hdr->syn && !tcp_hdr->ack){
@@ -669,7 +676,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
             printf("This packet is for me(Echo Req), Initialize ARP req..\n");
             
             struct sr_arpcache *cache = &(sr->cache);
-            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_src);
+            struct sr_rt* matching_entry = longest_prefix_match1(sr, ip_packet->ip_src);
             struct sr_arpentry* arpentry = sr_arpcache_lookup(cache, (uint32_t)((matching_entry->gw).s_addr));
             
             if(arpentry != NULL){/* Find ARP cache matching the echo req src*/
@@ -702,7 +709,7 @@ int sr_handleIPpacket(struct sr_instance* sr,
         
         /* Check if Routing Table has entry for targeted ip addr */
         /* use lpm */
-        struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+        struct sr_rt* matching_entry = longest_prefix_match1(sr, ip_packet->ip_dst);
         
         /* Found destination in routing table*/
         if(matching_entry != NULL){
@@ -986,22 +993,29 @@ int sendICMPmessage(struct sr_instance* sr, uint8_t icmp_type,
 
 }
 
-struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip) {
+struct sr_rt* longest_prefix_match1(struct sr_instance* sr, uint32_t ip){
 
-    struct sr_rt *rt = sr->routing_table;
-  unsigned long int longestMatch = 0;
-  struct sr_rt *rtMatch = NULL;
-
-  while (rt != NULL) {
-     if (((unsigned long int) rt->mask.s_addr & (unsigned long int) ip) == (unsigned long int) rt->dest.s_addr) {
-        if ((rt->mask.s_addr) > longestMatch) {
-           longestMatch = rt->mask.s_addr;
-           rtMatch = rt;
+    struct sr_rt *rtable = sr->routing_table;
+    struct sr_rt *match = NULL;
+    unsigned long length = 0;
+    while (rtable){
+        /* Check which entry has the same ip addr as given one */
+        if (((rtable->dest).s_addr & (rtable->mask).s_addr) == (ip & (rtable->mask).s_addr)){
+            /* Check if it's longer based on the mask */
+          if (length == 0 || length < (rtable->mask).s_addr){
+            length = (rtable->mask).s_addr;
+            match = rtable;
+          }         
         }
-     }
-     rt = rt->next;
-  }
-  return rtMatch;
+        rtable = rtable->next;
+    }
+    
+    /* Check if we find a matching entry */
+    if(length == 0){
+      return NULL;
+    }
+
+    return match;
 }
 
 /* Find   in routing table */
@@ -1014,7 +1028,7 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
 
     while (rtable){
         /* Check which entry has the same ip addr as given one */
-        if (((rtable->dest).s_addr & (rtable->mask).s_addr) == (ip & (rtable->mask).s_addr)){
+        if (((uint32_t) (rtable->dest).s_addr & (uint32_t)(rtable->mask).s_addr) == ((uint32_t)ip & (uint32_t)(rtable->mask).s_addr)){
             /* Check if it's longer based on the mask */
           if (length == 0 || length < (rtable->mask).s_addr){
             length = (rtable->mask).s_addr;
