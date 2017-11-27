@@ -1071,25 +1071,32 @@ struct sr_rt* longest_prefix_match_internal(struct sr_instance* sr, uint32_t ip)
     struct sr_rt *match = NULL;
     struct sr_rt *default_eth1 = NULL;
     unsigned long length = 0;
+    int row = 0;
 
     while (rtable){
         /* Check which entry has the same ip addr as given one */
-
-        if(strcmp(rtable->interface, "eth1") == 0){
+        /*if (( (rtable->gw).s_addr  == ip) && (strcmp(rtable->interface, "eth1") == 0)){
+            match = rtable;
+            length = 1;
+        }*/
+        if(strcmp(rtable->interface, "eth1") == 0 && row < 1){
+            row++;
             default_eth1 = rtable;
-           match = rtable;
+            
         }
         rtable = rtable->next;
     }
     
     /* Check if we find a matching entry */
-    if(length == 0){
+   /* if(length == 0){*/
+
+
       
        return default_eth1;
       /*return NULL;*/
-    }
+   /* }*/
 
-    return match;
+    /*return match;*/
 }
 
 uint32_t icmp_cksum (sr_icmp_t3_hdr_t *icmpHdr, int len) {
