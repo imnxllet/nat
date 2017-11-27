@@ -249,8 +249,10 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                   if (tcp_con == NULL) {
                     printf("[NAT TCP] New conn, inserting..\n");
                     tcp_con = sr_nat_insert_tcp_con(nat_lookup, ip_packet->ip_src);
-                  }else{
-                    printf("[NAT TCP] Existing conn, start modify..\n");
+                    /*
+                    TCPEndpointIndependentFiltering [MAX_POINTS = 1]: Client sends a TCP SYN packet to one of the external host(exho1). Get a new mapping (internal port#, internal IP)<=>(external port#, external IP) (Let’s call the external pair Pext). After that, another external host(exho2) sends a TCP SYN packet using Pext as destination (port#, IP) pair. 
+Check : a TCP packet should be sent out via NAT internal interface with correct destination port#.*/
+                    /*printf("[NAT TCP] Existing conn, start modify..\n");
                     if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                         if(ntohs(tcp_hdr->dst_port) >= 1024){
 
@@ -261,7 +263,7 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                             printf("[NAT TCP] port < 1024, no need to drop...\n");
                             return sendICMPmessage(sr, 3, 3, interface, packet);
                         }
-                    }
+                    }*/
                   }
                   tcp_con->last_updated = time(NULL);
 
@@ -344,6 +346,14 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
 
                 }else{
                     printf("No matching nat entry found in table.. shit\n");
+                    /*TCPUnsolicitedSyn [MAX_POINTS = 1]: Send unsolicited SYN from one of
+                     the external hosts to the NAT external interface. It should generate an 
+                     ICMP port unreachable after 6s ONLY if the destination port to which the 
+                     packet is sent to is >= 1024.
+                     TCPUnsolicitedSyn2 [MAX_POINTS = 1]: TCPUnsolicitedSyn to 
+                     restricted external port#(22), It should generate an ICMP port unreachable 
+                     message too.
+                     */
                     if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                         if(ntohs(tcp_hdr->dst_port) >= 1024){
 
