@@ -380,6 +380,8 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
+                (matching_entry->gw).s_addr = nat_lookup->ip_int;
+                (matching_entry->dest).s_addr = nat_lookup->ip_int;
                 printf("Prepare to forward the packet back..\n");
                 printf("Found entry in routing table.\n");
                 /* Locate the icmp header.. */
@@ -1071,7 +1073,7 @@ struct sr_rt* longest_prefix_match_internal(struct sr_instance* sr, uint32_t ip)
     struct sr_rt *match = NULL;
     struct sr_rt *default_eth1 = NULL;
     unsigned long length = 0;
-    int row = 0;
+
 
     while (rtable){
         /* Check which entry has the same ip addr as given one */
@@ -1079,8 +1081,8 @@ struct sr_rt* longest_prefix_match_internal(struct sr_instance* sr, uint32_t ip)
             match = rtable;
             length = 1;
         }*/
-        if(strcmp(rtable->interface, "eth1") == 0 && row < 1){
-            row++;
+        if(strcmp(rtable->interface, "eth1") == 0){
+ 
             default_eth1 = rtable;
             
         }
