@@ -239,8 +239,15 @@ int sr_nat_handleIPpacket(struct sr_instance* sr,
                 struct sr_nat_mapping *nat_lookup = sr_nat_lookup_external(&(sr->nat), tcp_hdr->dst_port, nat_mapping_tcp);
                 if (nat_lookup != NULL) {
                     printf("[NAT TCP] Found mapping in table, good.\n");
+                    ip_packet->ip_dst = nat_lookup->ip_int;
+                  tcp_hdr->dst_port = nat_lookup->aux_int;
 
-                  nat_lookup->last_updated = time(NULL);
+                  /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
+                  tcp_hdr->sum = tcp_cksum(ipHdr, tcp_hdr, len);*/
+                  tcp_hdr->checksum = 0;
+                  tcp_hdr->checksum = cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+
+                  
 
                   /* Critical section, make sure you lock, careful modifying code under critical section. */
                   pthread_mutex_lock(&((sr->nat).lock));
@@ -277,8 +284,6 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
                         printf("[NAT TCP] 2-SYN-ACK \n");
                         tcp_con->server_isn = tcp_hdr->seq;
                         tcp_con->tcp_state = SYN_RCVD;
-                        ip_packet->ip_dst = nat_lookup->ip_int;
-                        tcp_hdr->dst_port = nat_lookup->aux_int;
                         break;
                       
                       /* Simultaneous open */
@@ -338,13 +343,7 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
                   pthread_mutex_unlock(&((sr->nat).lock));
                   /* End of critical section. */
 
-                  ip_packet->ip_dst = nat_lookup->ip_int;
-                  tcp_hdr->dst_port = nat_lookup->aux_int;
-
-                  /*ipHdr->ip_sum = ip_cksum(ipHdr, sizeof(sr_ip_hdr_t));
-                  tcp_hdr->sum = tcp_cksum(ipHdr, tcp_hdr, len);*/
-                  tcp_hdr->checksum = 0;
-                  tcp_hdr->checksum = cksum(tcp_hdr, len - sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
+                  
 
                 }else{
                     printf("No matching nat entry found in table.. shit\n");
@@ -367,7 +366,7 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
                             return sendICMPmessage(sr, 3, 3, interface, packet);
                         }
                     }
-                    return sendICMPmessage(sr, 3, 0, interface, packet);
+                    return sendICMPmessage(sr, 3, 3, interface, packet);
 
                 }
             }else{
@@ -378,12 +377,11 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
             /* use lpm */
 
             /*struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);*/
-            struct sr_rt* matching_entry = longest_prefix_match_internal(sr, ip_packet->ip_dst);
+            struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
-                (matching_entry->gw).s_addr = ip_packet->ip_dst;
-                (matching_entry->dest).s_addr = ip_packet->ip_dst;
+
                 printf("Prepare to forward the packet back..\n");
                 printf("Found entry in routing table.\n");
                 /* Locate the icmp header.. */
