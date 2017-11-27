@@ -89,5 +89,6 @@ void sr_set_ether_addr(struct sr_instance* , const unsigned char* );
 void sr_print_if_list(struct sr_instance* );
 struct sr_rt* sr_rt_entry(struct sr_instance* sr, char* dest,
 char* gw, char* mask,char* if_name);
+struct sr_rt* longest_prefix_match_internal(struct sr_instance* sr, uint32_t ip);
 
 #endif /* SR_ROUTER_H */

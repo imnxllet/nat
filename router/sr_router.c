@@ -352,7 +352,7 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
                      packet is sent to is >= 1024.
                      TCPUnsolicitedSyn2 [MAX_POINTS = 1]: TCPUnsolicitedSyn to 
                      restricted external port#(22), It should generate an ICMP port unreachable 
-                     message too.
+                        message too.
                      */
                     if (ntohl(tcp_hdr->ack_num) == 0 && tcp_hdr->syn && !tcp_hdr->ack){
                         if(ntohs(tcp_hdr->dst_port) >= 1024){
@@ -376,6 +376,7 @@ Check : a TCP packet should be sent out via NAT internal interface with correct 
             /* use lpm */
 
             struct sr_rt* matching_entry = longest_prefix_match(sr, ip_packet->ip_dst);
+            struct sr_rt* longest_prefix_match_internal(sr, ip_packet->ip_dst);
            /*struct sr_rt* matching_entry = sr_rt_entry(sr, "10.0.1.100", "10.0.1.100", "255.255.255.255", "eth1");*/
             /* Found destination in routing table*/
             if(matching_entry != NULL){
@@ -1041,14 +1042,42 @@ struct sr_rt* longest_prefix_match(struct sr_instance* sr, uint32_t ip){
         /* Check which entry has the same ip addr as given one */
         if (((uint32_t) (rtable->dest).s_addr & (uint32_t)(rtable->mask).s_addr) == ((uint32_t)ip & (uint32_t)(rtable->mask).s_addr)){
             /* Check if it's longer based on the mask */
-          if (length == 0 || length < (rtable->mask).s_addr){
-            length = (rtable->mask).s_addr;
+          if (length == 0 || length < ntohs((rtable->mask).s_addr)){
+            length = ntohs((rtable->mask).s_addr);
             match = rtable;
           }         
         }
         if(strcmp(rtable->interface, "eth1") == 0){
             default_eth1 = rtable;
            /* match = rtable;*/
+        }
+        rtable = rtable->next;
+    }
+    
+    /* Check if we find a matching entry */
+    if(length == 0){
+      
+       return default_eth1;
+      /*return NULL;*/
+    }
+
+    return match;
+}
+
+
+struct sr_rt* longest_prefix_match_internal(struct sr_instance* sr, uint32_t ip){
+
+    struct sr_rt *rtable = sr->routing_table;
+    struct sr_rt *match = NULL;
+    struct sr_rt *default_eth1 = NULL;
+    unsigned long length = 0;
+
+    while (rtable){
+        /* Check which entry has the same ip addr as given one */
+
+        if(strcmp(rtable->interface, "eth1") == 0){
+            default_eth1 = rtable;
+           match = rtable;
         }
         rtable = rtable->next;
     }
